@@ -24,6 +24,8 @@ const step = (title) => console.log(`\n▸ ${title}`);
 const shot = (name) => page.screenshot({ path: path.join(shots, `${name}.png`) });
 const headerText = () => page.locator('header').innerText();
 const weekOf = (text) => Number(/нед\. (\d+)/.exec(text)?.[1]);
+/** вкладка нижней навигации (внутри страниц тоже есть кнопки-фильтры) */
+const navTab = (name) => page.getByRole('navigation').getByRole('tab', { name });
 
 const executablePath = process.env.SMOKE_EXECUTABLE || undefined;
 // сторожевой таймер: зависший запуск браузера не должен держать терминал
@@ -106,7 +108,7 @@ try {
   await shot('02-intro');
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Дальше' }).tap();
   await page.getByRole('button', { name: 'Открыть лабораторию' }).tap();
-  await page.getByRole('tab', { name: 'Проект' }).waitFor();
+  await navTab('Проект').waitFor();
   check(await page.getByText('янв 2012 · нед. 1').isVisible(), 'игра начинается с января 2012 года');
   await shot('03-game');
 
@@ -133,14 +135,14 @@ try {
     ['Ещё', 'Прошлая неделя'],
   ];
   for (const [tab, heading] of screens) {
-    await page.getByRole('tab', { name: tab }).tap();
+    await navTab(tab).tap();
     check(await page.getByRole('heading', { name: heading }).first().isVisible(), `вкладка «${tab}» открывается`);
   }
   await shot('04-market');
 
   step('Минимальная ширина 360px');
   await page.setViewportSize({ width: 360, height: 740 });
-  await page.getByRole('tab', { name: 'Лаборатория' }).tap();
+  await navTab('Лаборатория').tap();
   await page.waitForTimeout(250);
   await shot('05-min-360');
   const overflow = await page.evaluate(() => {
@@ -161,11 +163,11 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
 
   step('Сейв переживает перезагрузку файла');
-  await page.getByRole('tab', { name: 'Проект' }).tap();
+  await navTab('Проект').tap();
   const before = await headerText();
   await page.reload();
   await page.getByRole('button', { name: 'Продолжить' }).tap();
-  await page.getByRole('tab', { name: 'Проект' }).waitFor();
+  await navTab('Проект').waitFor();
   check(weekOf(await headerText()) === weekOf(before), 'неделя восстановлена из localStorage');
   check(await page.getByRole('button', { name: 'Пауза' }).getAttribute('aria-pressed') === 'true', 'после загрузки игра стоит на паузе');
 
@@ -241,13 +243,53 @@ try {
   await page.getByRole('button', { name: 'К продажам' }).tap();
 
   step('Рынок: кредит');
-  await page.getByRole('tab', { name: 'Рынок' }).tap();
+  await navTab('Рынок').tap();
   await page.getByRole('heading', { name: 'Кредит' }).scrollIntoViewIfNeeded();
   const loanButton = page.getByRole('button', { name: /^Взять в кредит/ }).first();
   await loanButton.tap();
   await page.getByText('долг', { exact: false }).first().waitFor();
   check(true, 'кредит оформлен, долг отображается');
   await shot('13-market');
+
+  step('Команда: найм');
+  await navTab('Команда').tap();
+  await page.getByRole('heading', { name: 'Кандидаты' }).waitFor();
+  await page.getByRole('button', { name: 'Нанять' }).first().tap();
+  await page.getByText('2 из 3 мест').first().waitFor();
+  check(true, 'кандидат нанят, занято 2 из 3 мест гаража');
+  await dismissModals();
+  await page.evaluate(() => document.querySelector('main').scrollTo(0, 0));
+  await shot('14a-team-top');
+  await page.getByRole('heading', { name: 'Бусты' }).scrollIntoViewIfNeeded();
+  await shot('14-team');
+  const focusSlider = page.getByLabel(/Фокус .*: доля исследований/).first();
+  await focusSlider.focus();
+  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
+  check(Number(await focusSlider.inputValue()) === 55, 'слайдер фокуса сотрудника слушается (50% → 55%)');
+
+  step('Лаборатория: первое исследование');
+  await navTab('Лаборатория').tap();
+  await page.getByRole('button', { name: 'Ускорение ×4' }).tap();
+  const rpValue = async () => Number(/И-очки\s+(\d+)/.exec(await headerText())?.[1] ?? 0);
+  for (let i = 0; i < 60 && (await rpValue()) < 20; i++) {
+    await page.waitForTimeout(500);
+    await dismissModals();
+  }
+  check((await rpValue()) >= 20, `исследовательские очки накопились (${await rpValue()})`);
+  await page.getByRole('button', { name: /Глубокие свёртки/ }).tap();
+  await page.getByText('Что даст').waitFor();
+  await shot('15-research');
+  await page.getByRole('button', { name: 'Начать исследование' }).tap();
+  await page.getByRole('button', { name: /Глубокие свёртки[\s\S]*изучено/ }).waitFor({ timeout: 12000 });
+  check(true, '«Глубокие свёртки» изучено — открыта парадигма свёрточных сетей');
+  await shot('16-lab');
+  await navTab('Проект').tap();
+  await page.getByRole('button', { name: 'Новая модель' }).tap();
+  await page.getByRole('button', { name: 'Компьютерное зрение' }).tap();
+  await page.getByRole('button', { name: 'Дальше' }).tap();
+  check(await page.getByRole('button', { name: /Свёрточные сети/ }).isVisible(), 'новая парадигма доступна в мастере');
+  await dismissModals();
+  await page.getByRole('button', { name: 'Закрыть' }).tap();
 } catch (err) {
   failures.push(`сценарий прерван: ${String(err).split('\n')[0]}`);
   console.log(`  ✗ сценарий прерван: ${String(err).split('\n').slice(0, 6).join('\n')}`);

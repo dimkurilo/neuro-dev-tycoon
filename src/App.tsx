@@ -11,9 +11,15 @@ import { Btn, Card } from './ui/primitives';
 import { ProjectTab } from './ui/tabs/ProjectTab';
 import { MarketTab } from './ui/tabs/MarketTab';
 import { MoreTab } from './ui/tabs/MoreTab';
+import { TeamTab } from './ui/tabs/TeamTab';
+import { LabTab } from './ui/tabs/LabTab';
+import { OfficeTab } from './ui/tabs/OfficeTab';
 
 const TABS = {
   project: () => <ProjectTab />,
+  lab: () => <LabTab />,
+  team: () => <TeamTab />,
+  office: () => <OfficeTab />,
   market: () => <MarketTab />,
   more: () => <MoreTab />,
 };

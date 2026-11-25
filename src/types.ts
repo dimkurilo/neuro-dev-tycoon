@@ -325,6 +325,8 @@ export interface FeatureAffinity {
   domains?: string[];
   groups?: DomainGroup[];
   paradigms?: string[];
+  /** прибавка к качеству, когда проект подходит под сродство */
+  bonus: number;
 }
 
 export interface Feature {
@@ -484,7 +486,8 @@ export interface CourseDef {
   research?: number;
   engineering?: number;
   speed?: number;
-  maxLevel?: LevelId;
+  /** минимальный уровень сотрудника для допуска */
+  minLevel?: LevelId;
 }
 
 export interface Loan {
@@ -732,6 +735,8 @@ export type Modal =
   | { kind: 'achievement'; id: string }
   | { kind: 'newModel' }
   | { kind: 'model'; modelId: number }
+  | { kind: 'courses'; staffId: string }
+  | { kind: 'research'; nodeId: string }
   | { kind: 'save' }
   | { kind: 'confirm'; title: string; text: string; confirmLabel: string; danger?: boolean; onConfirm: () => void };
 

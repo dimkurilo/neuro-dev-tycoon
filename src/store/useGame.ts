@@ -8,6 +8,9 @@ import { Rng } from '../sim/rng';
 import { createModel, releaseNow, validateModel, type ModelInput } from '../sim/project';
 import { repayLoan, takeLoan } from '../sim/finance';
 import { licenseGpu, licensePlatform, moveOffice, useGpu } from '../sim/market';
+import { activateBoost } from '../sim/boosts';
+import { fire, hire, postJobs, sendTraining, sendVacation, setFocus, toggleProject } from '../sim/staff';
+import { startResearch } from '../sim/research';
 import { exportSave, normalizeGame, parseSave, SAVE_KEY, SAVE_VERSION } from '../sim/save';
 
 // localStorage бывает недоступен (приватный режим, запрещённые куки) — тогда живём в памяти,
@@ -74,10 +77,19 @@ export interface GameStore {
   moveOffice(id: string): string | null;
   takeLoan(amount: number): string | null;
   repayLoan(loanId: number, amount: number): string | null;
+  hire(candidateId: string): string | null;
+  fire(staffId: string): string | null;
+  toggleProject(staffId: string): string | null;
+  setFocus(staffId: string, value: number): void;
+  sendTraining(staffId: string, courseId: string): string | null;
+  sendVacation(staffId: string): string | null;
+  postJobs(): string | null;
+  activateBoost(id: string): string | null;
+  startResearch(nodeId: string): string | null;
 }
 
 /** листы, при открытии которых мир продолжает идти; остальные останавливают время */
-const NON_BLOCKING: ReadonlySet<Modal['kind']> = new Set(['model', 'save']);
+const NON_BLOCKING: ReadonlySet<Modal['kind']> = new Set(['model', 'save', 'courses', 'research']);
 
 export function isBlocking(modal: Modal | null, queue: Modal[]): boolean {
   if (queue.length > 0) return true;
@@ -235,6 +247,18 @@ export const useGame = create<GameStore>()(
         moveOffice: (id) => act((draft) => moveOffice(draft, id)),
         takeLoan: (amount) => act((draft) => takeLoan(draft, amount)),
         repayLoan: (loanId, amount) => act((draft) => repayLoan(draft, loanId, amount)),
+        hire: (candidateId) => act((draft) => hire(draft, candidateId)),
+        fire: (staffId) => act((draft) => fire(draft, staffId)),
+        toggleProject: (staffId) => act((draft) => toggleProject(draft, staffId)),
+        setFocus: (staffId, value) => act((draft) => {
+          setFocus(draft, staffId, value);
+          return null;
+        }),
+        sendTraining: (staffId, courseId) => act((draft) => sendTraining(draft, staffId, courseId)),
+        sendVacation: (staffId) => act((draft) => sendVacation(draft, staffId)),
+        postJobs: () => act((draft, rng) => postJobs(draft, rng)),
+        activateBoost: (id) => act((draft, rng) => activateBoost(draft, id, rng)),
+        startResearch: (nodeId) => act((draft) => startResearch(draft, nodeId)),
       };
     },
     {

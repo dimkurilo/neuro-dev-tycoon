@@ -30,6 +30,22 @@ export const BALANCE = {
     compositionBoost: 2,
     compositionCap: 1.5,
     statCap: 100,
+    /** особенности ролей (n — сколько таких сотрудников в команде проекта) */
+    roles: {
+      /** ресечер: во столько раз больше исследовательских очков */
+      researcherRp: 1.5,
+      /** дата-инженер: −roleData за каждого к деградациям с данными, не ниже roleDataCap */
+      dataBug: 0.08,
+      dataBugCap: 0.32,
+      /** MLOps: −roleGpu к цене GPU-часов и +roleSpeed к скорости за каждого */
+      gpuCost: 0.06,
+      gpuCostCap: 0.25,
+      speed: 0.04,
+      speedCap: 0.16,
+      /** ML-инженер: +roleFix к скорости исправления за каждого */
+      fix: 0.08,
+      fixCap: 0.32,
+    },
     burnoutFrom: 40,
     burnoutPenalty: 0.5,
     burnoutPerWeek: 1.6,

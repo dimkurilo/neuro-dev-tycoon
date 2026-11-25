@@ -10,6 +10,8 @@ import { CATEGORY_META } from './meta';
 import { useAutoClose } from './useAutoClose';
 import { NewModelSheet } from './tabs/project/NewModelSheet';
 import { ReleaseModal } from './tabs/project/ReleaseModal';
+import { CoursesSheet } from './tabs/team/CoursesSheet';
+import { ResearchSheet } from './tabs/lab/ResearchSheet';
 
 function NewsModal({ newsId, onClose }: { newsId: number; onClose: () => void }) {
   const item = useGame((s) => s.game?.news.find((n) => n.id === newsId));
@@ -185,6 +187,10 @@ export function ModalHost() {
       return <AchievementModal id={modal.id} onClose={close} />;
     case 'newModel':
       return <NewModelSheet onClose={close} />;
+    case 'courses':
+      return <CoursesSheet staffId={modal.staffId} onClose={close} />;
+    case 'research':
+      return <ResearchSheet nodeId={modal.nodeId} onClose={close} />;
     case 'save':
       return <SaveSheet onClose={close} />;
     case 'confirm':

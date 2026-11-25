@@ -121,7 +121,7 @@ export const RESEARCH: ResearchNode[] = [
   n('fw-synth', 'Синтетические данные', 'Функция фреймворка: недостающие примеры генерирует лаборатория.', 'spark', 'framework', 3, ['fw-auglib'], 2019, { features: ['synth'] }),
   n('fw-federated', 'Федеративное обучение', 'Функция фреймворка: обучение на данных клиентов.', 'globe', 'framework', 3, ['fw-dist'], 2018, { features: ['federated'] }),
   n('fw-serve', 'Оптимизированный сервинг', 'Функция фреймворка: батчирование и прогретые ядра инференса.', 'cloud', 'framework', 3, ['fw-quant'], 2018, { features: ['serve'] }),
-  n('fw-cache', 'Кэш инференса', 'Функция фреймворка: повторные запросов не считают заново.', 'stack', 'framework', 3, ['fw-serve'], 2020, { features: ['cache'] }),
+  n('fw-cache', 'Кэш инференса', 'Функция фреймворка: повторные запросы не считаются заново.', 'stack', 'framework', 3, ['fw-serve'], 2020, { features: ['cache'] }),
   n('fw-distill', 'Дистилляция знаний', 'Функция фреймворка: открывает Mini-версии моделей.', 'copy', 'framework', 3, ['fw-quant'], 2020, { features: ['distill'] }),
   n('fw-guard', 'Фильтры вывода', 'Функция фреймворка: вредные ответы не покидают контур модели.', 'shield', 'framework', 3, ['fw-eval'], 2020, { features: ['guard'] }),
   n('mkt-show', 'Шоукастинг', 'Кампании: ключевой доклад, вирусное демо, серия публикаций и роуд-шоу.', 'megaphone', 'marketing', 3, ['mkt-pr'], 2016, { campaigns: ['talk', 'viral', 'series', 'roadshow'] }),

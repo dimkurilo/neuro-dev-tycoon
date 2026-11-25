@@ -2,6 +2,8 @@ import type { GameState, SimEvent, SimResult, Speed } from '../types';
 import { BALANCE } from '../data/balance';
 import { Rng } from './rng';
 import { runProject } from './project';
+import { runResearch } from './research';
+import { runStaff } from './staff';
 import { runAudience, runSales } from './sales';
 import { runFinance } from './finance';
 import { checkAchievements } from './achievements';
@@ -56,8 +58,13 @@ export function advanceWeek(game: GameState): SimResult {
   return { state, events };
 }
 
-/** порядок шагов недели: проект раньше продаж, продажи раньше финансов */
+/**
+ * Порядок шагов недели: лаборатория и команда обновляются до проекта (их бонусы действуют
+ * сразу), проект раньше продаж, продажи раньше финансов.
+ */
 function runSteps(state: GameState, rng: Rng, events: SimEvent[]): void {
+  runResearch(state, events);
+  runStaff(state, rng, events);
   runProject(state, rng, events);
   runAudience(state);
   const income = runSales(state);

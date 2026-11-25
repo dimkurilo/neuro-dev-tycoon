@@ -2,6 +2,7 @@ import type { GameState, Staff } from '../types';
 import { BALANCE } from '../data/balance';
 import { PALETTE } from '../data/names';
 import { Rng, randomSeed } from './rng';
+import { refreshCandidates } from './staff';
 
 export function createFounder(name: string, color: string): Staff {
   return {
@@ -29,7 +30,7 @@ export function createFounder(name: string, color: string): Staff {
 export function createGame(companyName: string, founderName: string, seed: number = randomSeed()): GameState {
   const rng = new Rng(seed);
   const accent = rng.pick(PALETTE);
-  return {
+  const game: GameState = {
     seed,
     rng: rng.state,
     companyName: companyName.trim() || 'Нейро Лабс',
@@ -114,4 +115,7 @@ export function createGame(companyName: string, founderName: string, seed: numbe
     gameover: null,
     tutorial: { active: true, step: 0 },
   };
+  // на старте рынок труда уже предлагает первых кандидатов
+  refreshCandidates(game, rng);
+  return game;
 }

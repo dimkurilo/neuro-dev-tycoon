@@ -224,10 +224,21 @@ export function runProject(state: GameState, rng: Rng, events: SimEvent[]): void
   }
 
   // стабилизация: команда чинит деградации по списку, начиная с самых тяжёлых
-  const capacity = fixCapacity(state, mods);
-  const ordered = [...project.degradations].sort((a, b) => degradationWeight(b) - degradationWeight(a));
-  let left = capacity;
+  const { remaining, solved } = applyFix(project.degradations, fixCapacity(state, mods));
+  if (solved > 0) events.push({ type: 'toast', text: solved === 1 ? 'Деградация устранена' : `Устранено деградаций: ${solved}`, tone: 'good' });
+  state.project = { ...project, degradations: remaining, spent: project.spent + gpuCost };
+  if (remaining.length === 0) releaseProject(state, rng, events);
+}
+
+/**
+ * Тратит amount «очков исправления» на самые тяжёлые деградации.
+ * Возвращает новый список и число полностью устранённых.
+ */
+export function applyFix(degradations: readonly Degradation[], amount: number): { remaining: Degradation[]; solved: number } {
+  const ordered = [...degradations].sort((a, b) => degradationWeight(b) - degradationWeight(a));
+  let left = amount;
   const remaining: Degradation[] = [];
+  let solved = 0;
   for (const d of ordered) {
     if (left <= 0 || d.fixed >= 1) {
       if (d.fixed < 1) remaining.push(d);
@@ -237,14 +248,10 @@ export function runProject(state: GameState, rng: Rng, events: SimEvent[]): void
     const applied = Math.min(left, total * (1 - d.fixed));
     left -= applied;
     const fixed = d.fixed + applied / total;
-    if (fixed >= 0.999) {
-      events.push({ type: 'toast', text: 'Деградация устранена', tone: 'good' });
-    } else {
-      remaining.push({ ...d, fixed });
-    }
+    if (fixed >= 0.999) solved++;
+    else remaining.push({ ...d, fixed });
   }
-  state.project = { ...project, degradations: remaining, spent: project.spent + gpuCost };
-  if (remaining.length === 0) releaseProject(state, rng, events);
+  return { remaining, solved };
 }
 
 /** максимальная выручка за неделю (пик кривой продаж) при текущем хайпе и цитируемости */
