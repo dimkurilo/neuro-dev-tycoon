@@ -12,6 +12,7 @@ import { runStaff } from './staff';
 import { runAudience, runSales } from './sales';
 import { runFinance } from './finance';
 import { checkAchievements } from './achievements';
+import { runTutorial } from './tutorial';
 
 /**
  * Фиксированный тик: 1 тик = 1 игровая неделя. Часы получают реальное время,
@@ -83,4 +84,5 @@ function runSteps(state: GameState, rng: Rng, events: SimEvent[]): void {
   runContracts(state, rng, events);
   runRivals(state, rng);
   checkAchievements(state, events);
+  runTutorial(state, events);
 }

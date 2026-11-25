@@ -17,13 +17,13 @@ export function GameOver() {
   const s = game.stats;
   const cells: { icon: IconName; label: string; value: string; sub?: string }[] = [
     { icon: 'calendar', label: 'Продержались', value: fmtDuration(game.gameover.week) },
-    { icon: 'rocket', label: 'Моделей выпущено', value: fmtInt(s.releases) },
+    { icon: 'rocket', label: 'Релизов', value: fmtInt(s.releases) },
     { icon: 'star', label: 'Лучшая оценка', value: s.bestRating > 0 ? fmt1(s.bestRating) : '—', sub: s.bestModel || undefined },
-    { icon: 'coin', label: 'Всего заработано', value: fmtMoney(s.totalRevenue) },
-    { icon: 'doc', label: 'Пик цитируемости', value: fmtCompact(s.peakFans) },
+    { icon: 'coin', label: 'Заработано', value: fmtMoney(s.totalRevenue) },
+    { icon: 'doc', label: 'Цитируемость', value: fmtCompact(s.peakFans) },
     { icon: 'lab', label: 'Исследований', value: fmtInt(s.researchDone) },
-    { icon: 'team', label: 'Нанято сотрудников', value: fmtInt(s.hired) },
-    { icon: 'briefcase', label: 'Контрактов выполнено', value: fmtInt(s.contractsDone) },
+    { icon: 'team', label: 'Нанято всего', value: fmtInt(s.hired) },
+    { icon: 'briefcase', label: 'Контрактов', value: fmtInt(s.contractsDone) },
   ];
   return (
     <div className="flex h-full flex-col overflow-y-auto px-5 safe-top safe-bottom">

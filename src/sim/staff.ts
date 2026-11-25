@@ -6,6 +6,7 @@ import { OFFICES, officeById } from '../data/offices';
 import { RESEARCH_BY_ID } from '../data/research';
 import { licensePrice } from './market';
 import { getMods } from './mods';
+import { burnoutFactor, deskBonus } from './office';
 import type { Rng } from './rng';
 import { clamp } from './util';
 
@@ -160,7 +161,8 @@ export function rpPerWeek(state: GameState): number {
     if (!isAvailable(s)) continue;
     const onProject = s.onProject && state.project !== null;
     const roleBonus = s.role === 'researcher' ? BALANCE.team.roles.researcherRp : 1;
-    rp += s.research * BALANCE.team.rpPerResearch * (onProject ? BALANCE.team.rpOnProject : 1) * roleBonus;
+    const bonus = deskBonus(state, s.desk);
+    rp += (s.research + bonus.research) * (1 + bonus.rp) * BALANCE.team.rpPerResearch * (onProject ? BALANCE.team.rpOnProject : 1) * roleBonus;
   }
   return rp * getMods(state).rp;
 }
@@ -200,7 +202,7 @@ export function runStaff(state: GameState, rng: Rng, events: SimEvent[]): void {
       if (left === 0) events.push({ type: 'toast', text: `${staff.name} вернулся из отпуска`, tone: 'info' });
     } else {
       const working = staff.onProject && state.project !== null;
-      const change = working ? BALANCE.team.burnoutPerWeek * mods.burnout - mods.burnoutRelief : -BALANCE.team.burnoutIdleRecover;
+      const change = working ? BALANCE.team.burnoutPerWeek * mods.burnout * burnoutFactor(deskBonus(state, staff.desk)) - mods.burnoutRelief : -BALANCE.team.burnoutIdleRecover;
       const burnout = clamp(staff.burnout + change, 0, 100);
       staff = { ...staff, burnout };
 

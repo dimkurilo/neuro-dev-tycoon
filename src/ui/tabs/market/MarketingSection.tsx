@@ -69,7 +69,8 @@ export function MarketingSection() {
             const fansLock = error && /цитирований/.test(error);
             return (
               <Card key={campaign.id} className="flex flex-col gap-2 p-2.5">
-                <div className="flex items-center gap-2">
+                {/* заголовок под иконкой: рядом с ней длинные названия не помещаются даже в два слова */}
+                <div className="flex flex-col items-start gap-2">
                   <IconBox icon={campaign.icon} tone="warn" />
                   <span className="text-[13px] leading-tight font-semibold">{campaign.name}</span>
                 </div>

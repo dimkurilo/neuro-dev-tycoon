@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "balance": "BALANCE_REPORT=1 vitest run src/sim/balance.test.ts",
+    "audit": "node scripts/audit.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

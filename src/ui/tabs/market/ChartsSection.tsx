@@ -54,23 +54,23 @@ export function ChartsSection() {
 
 function ChartRow({ entry, position, mode }: { entry: ChartEntry; position: number; mode: 'chart' | 'board' }) {
   return (
-    <li className={cn('flex min-h-14 items-center gap-3 rounded-xl border px-3 py-1.5', entry.mine ? 'border-accent/60 bg-accent/15' : 'border-line bg-panel')}>
+    <li className={cn('flex min-h-14 items-center gap-2 rounded-xl border px-3 py-1.5 min-[390px]:gap-3', entry.mine ? 'border-accent/60 bg-accent/15' : 'border-line bg-panel')}>
       <span className={cn('num w-6 shrink-0 text-center text-sm font-bold', position <= 3 ? 'text-warn' : 'text-muted')}>{position}</span>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: entry.color }}>
         <Icon name={domainById(entry.domain).icon} className="h-[18px] w-[18px] text-bg" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold">{entry.name}</span>
-        <span className="block truncate text-xs text-muted">
-          {entry.owner} · {domainById(entry.domain).name}
-        </span>
+        <span className="block truncate text-[13px] font-semibold min-[390px]:text-sm">{entry.name}</span>
+        <span className="block truncate text-xs text-muted">{entry.owner}</span>
+        <span className="block truncate text-[11px] text-muted min-[390px]:text-xs">{domainById(entry.domain).name}</span>
       </span>
+      {/* плашка «ваша» только от 400px: у Chip базовый inline-flex перебил бы hidden, поэтому прячет обёртка */}
       {entry.mine && (
-        <Chip tone="accent" className="hidden min-[400px]:inline-flex">
-          ваша
-        </Chip>
+        <span className="hidden min-[400px]:block">
+          <Chip tone="accent">ваша</Chip>
+        </span>
       )}
-      <span className="num w-[76px] shrink-0 text-right text-sm font-semibold">{mode === 'chart' ? fmtMoney(entry.revenue) : fmt1(entry.rating)}</span>
+      <span className="num min-w-[76px] shrink-0 text-right text-sm whitespace-nowrap font-semibold">{mode === 'chart' ? fmtMoney(entry.revenue) : fmt1(entry.rating)}</span>
     </li>
   );
 }

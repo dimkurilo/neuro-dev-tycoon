@@ -105,12 +105,12 @@ export function Bar({ value, max, color, className }: { value: number; max: numb
 export function Stat({ icon, label, value, sub, tone, compact }: { icon: IconName; label: string; value: ReactNode; sub?: ReactNode; tone?: 'default' | 'good' | 'bad' | 'warn'; compact?: boolean }) {
   const color = tone === 'good' ? 'text-good' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-text';
   return (
-    <div className={cn('min-w-0 rounded-xl border border-line bg-panel2 py-2', compact ? 'px-2' : 'px-2.5')}>
+    <div className={cn('min-w-0 rounded-xl border border-line bg-panel2 py-2', compact ? 'px-1.5 min-[390px]:px-2' : 'px-2.5')}>
       <div className={cn('flex items-center gap-1.5 text-muted', compact ? 'text-[11px]' : 'text-xs')}>
         <Icon name={icon} className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{label}</span>
       </div>
-      <div className={cn('num mt-0.5 truncate text-[15px] font-semibold', color)}>{value}</div>
+      <div className={cn('num mt-0.5 truncate font-semibold', compact ? 'text-[14px] min-[390px]:text-[15px]' : 'text-[15px]', color)}>{value}</div>
       {sub && <div className="num truncate text-[11px] text-muted">{sub}</div>}
     </div>
   );

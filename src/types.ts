@@ -744,6 +744,7 @@ export type Modal =
   | { kind: 'framework' }
   | { kind: 'frameworkReport' }
   | { kind: 'newExpansion' }
+  | { kind: 'achievements' }
   | { kind: 'save' }
   | { kind: 'confirm'; title: string; text: string; confirmLabel: string; danger?: boolean; onConfirm: () => void };
 

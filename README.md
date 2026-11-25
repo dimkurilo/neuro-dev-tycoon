@@ -18,7 +18,13 @@ npm test           # Vitest: тесты симуляции
 npm run smoke      # Playwright-смоук: dist/index.html по file://, вьюпорт 390×844
 ```
 
-Смоук использует установленный Google Chrome (`playwright-core` не докачивает браузеры). Путь к другому Chromium можно передать в `SMOKE_EXECUTABLE`.
+Смоук использует установленный Google Chrome (`playwright-core` не докачивает браузеры). Путь к другому Chromium можно передать в `SMOKE_EXECUTABLE`. Партия в смоуке воспроизводима: генератор закреплён.
+
+```bash
+npm run balance     # бот-игрок ведёт партию 2012→2040 на трёх сидах и печатает таблицу по годам
+npm run audit       # мобильный аудит на 360px: переполнения, обрезанный текст, зоны нажатия меньше 44px
+node scripts/preview.mjs <сейв.json> <вкладка> <скриншот.png> [ширина]   # скриншот вкладки с подставленным сейвом
+```
 
 ## Структура
 
@@ -27,3 +33,5 @@ npm run smoke      # Playwright-смоук: dist/index.html по file://, вью
 - `src/store/` — стор на zustand с persist
 - `src/ui/` — экраны, вкладки, нижние листы, инлайн-SVG-иконки
 - `scripts/smoke.mjs` — сквозной сценарий для собранного файла
+- `scripts/audit.mjs`, `scripts/preview.mjs` — мобильный аудит и скриншоты экранов
+- `src/sim/bot.ts` — автоматический игрок для баланс-прохода

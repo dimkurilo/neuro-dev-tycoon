@@ -1,6 +1,6 @@
 import type { OfficeModuleDef } from '../types';
 
-// Объекты офиса: покупаются и расставляются по клеткам; действуют на соседние столы.
+// Объекты офиса: покупаются и расставляются по свободным клеткам; действуют на столы в восьми клетках вокруг.
 // minOffice — какой офис нужен (0 — гараж, 1 — студия, 2 — кампус), upkeep — содержание в неделю.
 export const MODULES: OfficeModuleDef[] = [
   { id: 'm-board', name: 'Доска для схем', icon: 'board', desc: 'Соседние столы: +8 к инженерии.', cost: 8000, upkeep: 50, research: 'office-board', max: 2, minOffice: 1, effect: { engineering: 8 } },

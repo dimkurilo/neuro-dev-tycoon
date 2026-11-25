@@ -6,6 +6,7 @@ import { GPU_BY_ID } from '../data/gpus';
 import { researchName } from '../data/research';
 import { isResearchDone } from './unlock';
 import { yearsSince, yearOf } from './time';
+import { reseat, settleObjects } from './office';
 
 /** лицензии и прочие разовые платежи дорожают вместе с рынком */
 export function licensePrice(state: GameState, base: number): number {
@@ -55,8 +56,8 @@ export function moveOffice(state: GameState, id: string): string | null {
   if (state.money < price) return 'Недостаточно денег на переезд';
   state.money -= price;
   state.office = id;
-  // столы, которых нет в новом офисе, освобождаются
-  const desks = new Set(office.desks);
-  state.staff = state.staff.map((s) => (s.desk !== null && !desks.has(s.desk) ? { ...s, desk: null } : s));
+  // кто остался без стола в новом офисе, занимает свободный; объекты с клеток-столов переезжают
+  reseat(state);
+  settleObjects(state);
   return null;
 }

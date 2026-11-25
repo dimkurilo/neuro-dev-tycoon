@@ -55,9 +55,9 @@ function StaffCard({ staff, game }: { staff: Staff; game: GameState }) {
             <span className="truncate text-[15px] font-semibold">{staff.name}</span>
             {staff.founder && <Chip tone="accent">вы</Chip>}
           </div>
-          <div className="truncate text-xs text-muted">
-            {staff.founder ? 'основатель лаборатории' : `${staffTitle(staff)} · ${fmtMoney(staff.salary)} в неделю`}
-          </div>
+          {/* звание и зарплата отдельно: в одну строку на узком экране зарплата срезалась */}
+          <div className="truncate text-xs text-muted">{staff.founder ? 'основатель лаборатории' : staffTitle(staff)}</div>
+          {!staff.founder && <div className="num truncate text-xs text-muted">{fmtMoney(staff.salary)} в неделю</div>}
         </div>
         <button
           type="button"
@@ -148,9 +148,8 @@ function CandidateCard({ game, candidateId }: { game: GameState; candidateId: st
         <Avatar name={candidate.name} color={candidate.color} size={40} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-semibold">{candidate.name}</div>
-          <div className="truncate text-xs text-muted">
-            {staffTitle(candidate)} · {fmtMoney(candidate.salary)} в неделю
-          </div>
+          <div className="truncate text-xs text-muted">{staffTitle(candidate)}</div>
+          <div className="num truncate text-xs text-muted">{fmtMoney(candidate.salary)} в неделю</div>
           <div className="num mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
             <span className="text-research">наука {candidate.research}</span>
             <span className="text-engineering">инженерия {candidate.engineering}</span>

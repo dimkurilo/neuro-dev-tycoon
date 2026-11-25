@@ -38,7 +38,7 @@ export function ProjectTab() {
             <Icon name="wrench" className="h-[22px] w-[22px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[15px] font-semibold">
+            <div className="truncate text-[14px] font-semibold min-[390px]:text-[15px]">
               {framework.name}
               {framework.version > 0 ? ` · v${framework.version}` : ''}
             </div>

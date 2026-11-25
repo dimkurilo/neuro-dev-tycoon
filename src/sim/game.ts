@@ -2,6 +2,7 @@ import type { GameState, Staff } from '../types';
 import { BALANCE } from '../data/balance';
 import { PALETTE } from '../data/names';
 import { LABS } from '../data/labs';
+import { OFFICES } from '../data/offices';
 import { Rng, randomSeed } from './rng';
 import { refreshCandidates } from './staff';
 
@@ -21,7 +22,7 @@ export function createFounder(name: string, color: string): Staff {
     founder: true,
     vacationWeeks: 0,
     training: null,
-    desk: 0,
+    desk: OFFICES[0].desks[0],
     hiredWeek: 0,
     burnouts: 0,
     color,

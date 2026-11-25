@@ -14,6 +14,7 @@ import { getMods, type Mods } from './mods';
 import type { Rng } from './rng';
 import { comboKey, expectedFor, marketMultiplier, ratingFactor, reviewModel, scoreProject, trendMultiplier } from './release';
 import { lockReason } from './unlock';
+import { deskBonus } from './office';
 import { checkAchievements } from './achievements';
 import { activeContract, contractMatches, settleContract, settleGrants } from './contracts';
 import { clamp } from './util';
@@ -116,14 +117,15 @@ export function teamPools(state: GameState): Pools {
   for (const s of state.staff) {
     if (!s.onProject || s.vacationWeeks > 0 || s.training) continue;
     members.push(s);
+    const bonus = deskBonus(state, s.desk);
     const speedFactor = BALANCE.team.speedFloor + (BALANCE.team.speedRange * s.speed) / 100;
     const over = Math.max(0, s.burnout - BALANCE.team.burnoutFrom) / (100 - BALANCE.team.burnoutFrom);
     const burnFactor = 1 - BALANCE.team.burnoutPenalty * over;
-    const base = (speedFactor * burnFactor) / BALANCE.team.powerDivisor;
+    const base = ((speedFactor * burnFactor) / BALANCE.team.powerDivisor) * (1 + bonus.speed);
     const focus = s.focus / 100;
     const keep = BALANCE.team.focusBase;
-    research += s.research * (keep + (1 - keep) * focus) * base;
-    engineering += s.engineering * (keep + (1 - keep) * (1 - focus)) * base;
+    research += (s.research + bonus.research) * (keep + (1 - keep) * focus) * base;
+    engineering += (s.engineering + bonus.engineering) * (keep + (1 - keep) * (1 - focus)) * base;
   }
   const total = research + engineering;
   return {

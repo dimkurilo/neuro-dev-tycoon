@@ -15,6 +15,7 @@ import { startFramework } from '../sim/framework';
 import { acceptGrant, acceptInvestor, dropContract, rejectInvestor, takeContract } from '../sim/contracts';
 import { startCampaign } from '../sim/marketing';
 import { startExpansion } from '../sim/expansions';
+import { buyObject, moveDesk, moveObject, sellObject } from '../sim/office';
 import { exportSave, normalizeGame, parseSave, SAVE_KEY, SAVE_VERSION } from '../sim/save';
 
 // localStorage бывает недоступен (приватный режим, запрещённые куки) — тогда живём в памяти,
@@ -98,6 +99,11 @@ export interface GameStore {
   acceptGrant(id: number): string | null;
   startCampaign(id: string): string | null;
   startExpansion(baseId: number, type: ExpansionType, name: string): string | null;
+  buyObject(id: string): string | null;
+  moveObject(uid: number, tile: number): string | null;
+  sellObject(uid: number): string | null;
+  moveDesk(staffId: string, desk: number): string | null;
+  skipTutorial(): void;
 }
 
 /** листы, при открытии которых мир продолжает идти; остальные останавливают время */
@@ -285,6 +291,14 @@ export const useGame = create<GameStore>()(
         acceptGrant: (id) => act((draft) => acceptGrant(draft, id)),
         startCampaign: (id) => act((draft) => startCampaign(draft, id)),
         startExpansion: (baseId, type, name) => act((draft, rng) => startExpansion(draft, baseId, type, rng, name)),
+        buyObject: (id) => act((draft) => buyObject(draft, id)),
+        moveObject: (uid, tile) => act((draft) => moveObject(draft, uid, tile)),
+        sellObject: (uid) => act((draft) => sellObject(draft, uid)),
+        moveDesk: (staffId, desk) => act((draft) => moveDesk(draft, staffId, desk)),
+        skipTutorial: () => {
+          const game = get().game;
+          if (game) set({ game: { ...game, tutorial: { ...game.tutorial, active: false } } });
+        },
       };
     },
     {

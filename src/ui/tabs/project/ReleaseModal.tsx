@@ -44,7 +44,7 @@ export function ReleaseModal({ modelId, onClose }: { modelId: number; onClose: (
         </span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-lg leading-tight font-bold">{model.name}</div>
-          <div className="truncate text-xs text-muted">
+          <div className="text-xs leading-snug text-muted">
             {domain.name} · {paradigmById(model.paradigm).name} · {platformById(model.platform).name}
           </div>
           <div className="num text-xs text-muted">{formatDate(model.releasedWeek)}</div>

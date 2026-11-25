@@ -4,6 +4,7 @@ import { officeById } from '../data/offices';
 import { gpuWeeklyCost } from './project';
 import { yearsSince } from './time';
 import { unlockAchievement } from './achievements';
+import { objectsUpkeep } from './office';
 
 export interface Costs {
   salaries: number;
@@ -22,8 +23,7 @@ export function weeklyCosts(state: GameState): Costs {
   for (const loan of state.loans) interest += loan.balance * loan.rate;
   const rent = officeById(state.office).rent;
   const gpu = gpuWeeklyCost(state);
-  // содержание объектов офиса появится вместе с самими объектами
-  const upkeep = 0;
+  const upkeep = objectsUpkeep(state);
   return { salaries, rent, gpu, interest, upkeep, total: salaries + rent + gpu + interest + upkeep };
 }
 

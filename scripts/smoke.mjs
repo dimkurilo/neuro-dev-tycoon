@@ -3,10 +3,10 @@
 // и проигрывает сценарий настоящими тапами. Запуск: npm run build && npm run smoke
 // Браузер — установленный Google Chrome (channel "chrome"); путь к другому Chromium
 // можно передать в SMOKE_EXECUTABLE.
-import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { launchPage } from './chrome.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const shots = path.join(root, 'test-results');
@@ -34,46 +34,32 @@ const subTab = (name) => page.getByRole('group', { name: 'Разделы рын�
 
 const firstEventTitle = 'Краудсорсинговый датасет изображений';
 const START_DOMAINS = ['Компьютерное зрение', 'Анализ текста', 'Распознавание речи', 'Рекомендации', 'Кредитный скоринг', 'Антифрод', 'Прогнозирование спроса', 'Поиск', 'Машинный перевод', 'Спортивная аналитика'];
-const executablePath = process.env.SMOKE_EXECUTABLE || undefined;
 
-/**
- * Запуск системного Chrome иногда зависает (процесс поднят, ответа нет), и таймаут Playwright
- * при этом не срабатывает. Поэтому гоняем запуск с собственным таймером и повторяем попытку;
- * поздно поднявшийся браузер закрываем, чтобы не оставлять сирот.
- */
-async function launchBrowser(attempts = 3) {
-  const options = { headless: true, timeout: 30000, ...(executablePath ? { executablePath } : { channel: 'chrome' }) };
-  for (let attempt = 1; ; attempt++) {
-    const pending = chromium.launch(options);
-    let timer;
-    const guard = new Promise((_, reject) => {
-      timer = setTimeout(() => {
-        pending.then((b) => b.close().catch(() => {})).catch(() => {});
-        reject(new Error(`запуск браузера не завершился за 45 с (попытка ${attempt})`));
-      }, 45000);
-    });
-    try {
-      return await Promise.race([pending, guard]);
-    } catch (err) {
-      if (attempt >= attempts) throw err;
-      console.log(`  … ${err.message}; пробую ещё раз`);
-    } finally {
-      // браузер поднялся — таймер больше не должен его закрывать
-      clearTimeout(timer);
-    }
-  }
-}
-
-const browser = await launchBrowser();
-const context = await browser.newContext({
+const { browser, page } = await launchPage({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 2,
   hasTouch: true,
   isMobile: true,
   locale: 'ru-RU',
 });
-const page = await context.newPage();
 page.setDefaultTimeout(8000);
+
+// Партия в смоуке воспроизводима от запуска к запуску: генератор и часы закреплены, пока
+// не началась игра (сид берётся из Date.now и Math.random). Иначе проверки, зависящие
+// от случайной партии — место в чарте, предложения клиентов, — бросали бы жребий.
+const SMOKE_SEED = 20121125;
+await page.addInitScript((seed) => {
+  let state = seed;
+  Math.random = () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  window.__realNow = Date.now;
+  Date.now = () => 1356998400000; // 1 января 2013: любая фиксированная точка
+}, SMOKE_SEED);
 
 // сторожевой таймер: зависший шаг не должен держать терминал
 const watchdog = setTimeout(() => {
@@ -171,7 +157,13 @@ try {
   for (let i = 0; i < 3; i++) await tap(page.getByRole('button', { name: 'Дальше' }));
   await tap(page.getByRole('button', { name: 'Открыть лабораторию' }));
   await navTab('Проект').waitFor();
+  // игра создана — часы возвращаем, движок времени считает реальные миллисекунды
+  await page.evaluate(() => {
+    Date.now = window.__realNow;
+  });
   check(await page.getByText('янв 2012 · нед. 1').isVisible(), 'игра начинается с января 2012 года');
+  check(await page.getByText('Обучение · шаг 1 из 5').isVisible(), 'в новой партии показан первый шаг обучения');
+  check(await page.getByRole('button', { name: 'Пропустить обучение' }).isVisible(), 'обучение можно пропустить');
   await shot('03-game');
 
   step('Движок времени и первое событие таймлайна');
@@ -208,6 +200,10 @@ try {
     await nav(tab);
     check(await page.getByRole(role, { name: expected }).first().isVisible(), `вкладка «${tab}» открывается`);
   }
+  // подсказка обучения ведёт на нужную вкладку кнопкой «Показать»
+  check((await navTab('Ещё').getAttribute('aria-selected')) === 'true', 'открыта вкладка «Ещё»');
+  await tap(page.getByRole('button', { name: 'Показать' }));
+  check((await navTab('Проект').getAttribute('aria-selected')) === 'true', 'кнопка «Показать» в обучении ведёт на вкладку шага');
   await shot('04-market');
 
   step('Минимальная ширина 360px');
@@ -384,6 +380,8 @@ try {
   check(await page.getByText('Градиенты для любого графа вычислений.').isVisible(), 'в отчёте перечислены функции новой версии');
   await tap(page.getByRole('dialog').getByRole('button', { name: 'Отлично' }));
   check(await page.getByText(/v1/).first().isVisible(), 'карточка фреймворка показывает версию 1');
+  // к этому моменту выполнены все пять шагов обучения — подсказка ушла сама
+  check((await page.getByText('Обучение · шаг').count()) === 0, 'после своего фреймворка обучение завершается само');
 
   step('Версия модели');
   await tap(page.getByRole('button', { name: 'Новая версия модели' }));
@@ -404,9 +402,17 @@ try {
   await page.waitForTimeout(250);
   await shot('18-news');
   await tap(subTab('Чарты'));
-  check(await page.getByText(modelName, { exact: true }).first().isVisible(), 'модель игрока присутствует в чарте недели');
-  await tap(page.getByRole('button', { name: 'Лидерборд' }));
-  check(await page.getByRole('button', { name: 'Лидерборд' }).getAttribute('aria-pressed') === 'true', 'лидерборд переключается');
+  // место в топ-10 зависит от оценок и конкурентов: модель игрока отмечена хотя бы в одном из списков
+  const rating = page.getByRole('group', { name: 'Вид рейтинга' });
+  const mine = page.getByText(/Лучшая из ваших — на \d+-м месте/);
+  const chartRows = page.locator('ol > li');
+  check((await chartRows.count()) > 0, `чарт недели заполнен: ${await chartRows.count()} строк`);
+  await tap(rating.getByRole('button', { name: 'Лидерборд' }));
+  check(await rating.getByRole('button', { name: 'Лидерборд' }).getAttribute('aria-pressed') === 'true', 'лидерборд переключается');
+  const inBoard = await mine.count();
+  await tap(rating.getByRole('button', { name: 'Чарт недели' }));
+  const inChart = await mine.count();
+  check(inBoard + inChart > 0, `модель игрока отмечена в рейтинге${inChart ? ' (чарт недели)' : ''}${inBoard ? ' (лидерборд)' : ''}`);
   await page.waitForTimeout(250);
   await shot('19-charts');
 
@@ -480,6 +486,88 @@ try {
   } else {
     console.log('  • предложения клиентов не поступили за отведённое время — шаг пропущен');
   }
+
+  step('Офис: переезд, покупка объекта и расстановка тапами');
+  await nav('Лаборатория');
+  await waitForRp(45);
+  await tap(page.getByRole('button', { name: /Переезд в студию/ }));
+  await tap(page.getByRole('button', { name: 'Начать исследование' }));
+  await settle(page.getByRole('button', { name: /Переезд в студию[\s\S]*изучено/ }));
+  await waitForRp(45);
+  await tap(page.getByRole('button', { name: /Доски для схем/ }));
+  await tap(page.getByRole('button', { name: 'Начать исследование' }));
+  await settle(page.getByRole('button', { name: /Доски для схем[\s\S]*изучено/ }));
+  await nav('Офис');
+  const plan = page.getByRole('group', { name: 'План офиса' });
+  const seats = plan.getByRole('button', { name: /: переставить$/ });
+  const nameOf = async (i) => ((await seats.nth(i).getAttribute('aria-label')) ?? '').replace(': переставить', '');
+  check((await seats.count()) === 2, 'в гараже за столами двое');
+  // номер клетки — позиция элемента среди детей сетки; координаты в окне не годятся: тап под сгибом прокручивает ленту
+  const tileIndex = (locator) => locator.evaluate((el) => Array.prototype.indexOf.call(el.parentElement.children, el));
+  // пересадка: выбрать сотрудника, тапнуть по второму — они меняются столами
+  const firstName = await nameOf(0);
+  const firstTile = await tileIndex(seats.nth(0));
+  const secondTile = await tileIndex(seats.nth(1));
+  await tap(seats.nth(0));
+  await tap(plan.getByRole('button', { name: `${await nameOf(1)}: переставить` }));
+  const movedTile = await tileIndex(plan.getByRole('button', { name: `${firstName}: переставить` }));
+  check(movedTile === secondTile && secondTile !== firstTile, `тап по второму столу меняет сотрудников местами (${firstName}: клетка ${firstTile} → ${movedTile})`);
+  // переезд и объект стоят денег, а хвост продаж к этому времени почти нулевой: без запаса лаборатория
+  // через три недели уходит в минус — поэтому берём самый крупный доступный кредит заранее
+  await nav('Рынок');
+  await tap(subTab('Деньги'));
+  await tap(page.getByRole('button', { name: /^Взять в кредит/, disabled: false }).last());
+  await nav('Офис');
+  const moveButton = page.getByRole('button', { name: /^Переехать ·|^Переезд · не хватает/ }).first();
+  await moveButton.waitFor();
+  for (let i = 0; i < 60 && (await moveButton.isDisabled()); i++) {
+    await page.waitForTimeout(500);
+    await dismissModals();
+  }
+  check(!(await moveButton.isDisabled()), `денег на переезд хватает: ${(await moveButton.innerText()).trim()}`);
+  await tap(moveButton);
+  await page.getByText(/из 9 мест/).waitFor();
+  check((await seats.count()) === 2, 'после переезда в студию оба сотрудника за столами');
+  await page.waitForTimeout(250);
+  await shot('22-office-studio');
+  const buyButton = page.getByRole('button', { name: /^Купить/ }).first();
+  await buyButton.waitFor();
+  check(!(await buyButton.isDisabled()), `на объект хватает денег: ${(await buyButton.innerText()).trim()}`);
+  await tap(buyButton);
+  await page.getByText('1 из 2').waitFor();
+  const boardTile = plan.getByRole('button', { name: 'Доска для схем', exact: true });
+  check((await boardTile.count()) === 1, 'объект куплен и появился на плане');
+  await tap(boardTile);
+  await page.getByText('Действует на', { exact: false }).waitFor();
+  check((await plan.getByRole('button', { name: 'Свободная клетка' }).count()) > 0, 'выбранный объект предлагает свободные клетки');
+  await page.waitForTimeout(250);
+  await shot('23-office-picked');
+  const freeTile = plan.getByRole('button', { name: 'Свободная клетка' }).last();
+  const targetTile = await tileIndex(freeTile);
+  const startTile = await tileIndex(boardTile);
+  await tap(freeTile);
+  const landedTile = await tileIndex(boardTile);
+  check(landedTile === targetTile && landedTile !== startTile, `тап по свободной клетке переставляет объект (клетка ${startTile} → ${landedTile})`);
+  check((await plan.getByRole('button', { name: 'Свободная клетка' }).count()) === 0, 'после перестановки выбор снят');
+  await nav('Ещё');
+  await settle(page.getByText('Объекты офиса'));
+  check(true, 'содержание объекта вошло в расходы недели');
+  check(await page.getByText('Моделей выпущено').isVisible(), 'в «Ещё» есть сводная статистика');
+
+  step('Ещё: достижения');
+  const opened = Number(/Открыто (\d+) из 21/.exec(await page.getByText('Достижения', { exact: true }).locator('..').innerText())?.[1]);
+  await tap(page.getByText('Достижения', { exact: true }));
+  const sheet = page.getByRole('dialog', { name: 'Достижения' });
+  await sheet.waitFor();
+  const items = sheet.getByRole('listitem');
+  check((await items.count()) === 21, 'лист перечисляет все 21 достижение');
+  const unlocked = await sheet.locator('li:not(.opacity-60)').count();
+  check(unlocked === opened && opened > 0, `открытые подсвечены, как и на карточке: ${unlocked} из 21`);
+  check(await sheet.locator('li.opacity-60', { hasText: 'Ветеран отрасли' }).count() === 1, 'закрытые затемнены и показывают условие');
+  await page.waitForTimeout(300);
+  await shot('24-achievements');
+  await tap(sheet.getByRole('button', { name: 'Закрыть' }));
+  check((await page.getByRole('dialog').count()) === 0, 'лист достижений закрывается');
 } catch (err) {
   failures.push(`сценарий прерван: ${String(err).split('\n')[0]}`);
   console.log(`  ✗ сценарий прерван: ${String(err).split('\n').slice(0, 6).join('\n')}`);

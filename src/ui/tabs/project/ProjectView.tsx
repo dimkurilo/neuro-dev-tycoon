@@ -68,7 +68,7 @@ export function ProjectView({ project }: { project: Project }) {
             <Icon name={domain.icon} className="h-6 w-6 text-accent" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg leading-tight font-bold">{project.name}</h2>
+            <h2 className="text-lg leading-tight font-bold">{project.name}</h2>
             <div className="mt-1.5 flex flex-wrap gap-1">
               <Chip icon={paradigm.icon}>{paradigm.name}</Chip>
               {fit && <Chip tone={FIT_TONE[fit]}>{FIT_LABEL[fit]}</Chip>}
@@ -89,7 +89,7 @@ export function ProjectView({ project }: { project: Project }) {
               <li
                 key={i}
                 className={cn(
-                  'rounded-lg px-1 py-1.5 text-center text-[10px] leading-tight font-medium tracking-tight',
+                  'rounded-lg py-1.5 text-center text-[10px] leading-tight font-medium tracking-tight px-0 min-[390px]:px-1',
                   state === 'done' && 'bg-good/15 text-good',
                   state === 'now' && 'bg-accent/20 text-[#cdc5ff]',
                   state === 'next' && 'bg-panel2 text-muted',

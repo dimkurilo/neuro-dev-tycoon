@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
 import { createGame } from './game';
+import { reseat } from './office';
 
 export const SAVE_MAGIC = 'NEURO-LAB-TYCOON';
 export const SAVE_VERSION = 1;
@@ -76,6 +77,9 @@ export function normalizeGame(raw: unknown): GameState | null {
   merged.finance = arr(merged.finance);
   merged.comboMemory = rec(r.comboMemory) as GameState['comboMemory'];
   merged.achievements = arr<string>(merged.achievements);
+
+  // в ранних сейвах основатель сидел вне стола, а после переезда мог остаться без места
+  reseat(merged);
 
   // первая версия сейва не знала про согласования и обучение
   if (merged.tutorial.active === undefined) merged.tutorial.active = true;

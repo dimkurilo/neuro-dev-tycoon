@@ -34,7 +34,10 @@ export function ReleasesList() {
                 <div className="truncate text-[15px] font-semibold">{m.name}</div>
                 <div className="num truncate text-xs text-muted">{week - m.releasedWeek > 1 ? `${fmtMoney(m.totalRevenue)} всего` : 'вышла на этой неделе'}</div>
               </div>
-              <Sparkline data={m.weekly} color="var(--color-good)" width={56} height={24} />
+              {/* мини-график уступает место названию модели на экранах уже 390px; выручка за неделю остаётся цифрой */}
+              <span className="hidden shrink-0 min-[390px]:block">
+                <Sparkline data={m.weekly} color="var(--color-good)" width={56} height={24} />
+              </span>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <RatingBadge score={m.rating} size="sm" />
                 {selling && (

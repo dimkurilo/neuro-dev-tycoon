@@ -15,6 +15,7 @@ import { ResearchSheet } from './tabs/lab/ResearchSheet';
 import { FrameworkSheet } from './tabs/project/FrameworkSheet';
 import { FrameworkReport } from './tabs/project/FrameworkView';
 import { ExpansionSheet } from './tabs/project/ExpansionSheet';
+import { AchievementsSheet } from './tabs/AchievementsSheet';
 
 function NewsModal({ newsId, onClose }: { newsId: number; onClose: () => void }) {
   const item = useGame((s) => s.game?.news.find((n) => n.id === newsId));
@@ -200,6 +201,8 @@ export function ModalHost() {
       return <FrameworkReport onClose={close} />;
     case 'newExpansion':
       return <ExpansionSheet onClose={close} />;
+    case 'achievements':
+      return <AchievementsSheet onClose={close} />;
     case 'save':
       return <SaveSheet onClose={close} />;
     case 'confirm':

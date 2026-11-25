@@ -137,6 +137,12 @@ export const BALANCE = {
     investorShare: 0.3,
     investorWeeks: 104,
   },
+  office: {
+    /** доля текущей цены, которую возвращают при продаже объекта */
+    sellShare: 0.5,
+    /** во сколько раз объекты могут замедлить выгорание — не медленнее */
+    burnoutFloor: 0.2,
+  },
   market: {
     /** шанс нового предложения контракта за неделю */
     contractOfferChance: 0.35,
