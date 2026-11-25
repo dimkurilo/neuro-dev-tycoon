@@ -14,6 +14,7 @@ import { CoursesSheet } from './tabs/team/CoursesSheet';
 import { ResearchSheet } from './tabs/lab/ResearchSheet';
 import { FrameworkSheet } from './tabs/project/FrameworkSheet';
 import { FrameworkReport } from './tabs/project/FrameworkView';
+import { ExpansionSheet } from './tabs/project/ExpansionSheet';
 
 function NewsModal({ newsId, onClose }: { newsId: number; onClose: () => void }) {
   const item = useGame((s) => s.game?.news.find((n) => n.id === newsId));
@@ -197,6 +198,8 @@ export function ModalHost() {
       return <FrameworkSheet onClose={close} />;
     case 'frameworkReport':
       return <FrameworkReport onClose={close} />;
+    case 'newExpansion':
+      return <ExpansionSheet onClose={close} />;
     case 'save':
       return <SaveSheet onClose={close} />;
     case 'confirm':

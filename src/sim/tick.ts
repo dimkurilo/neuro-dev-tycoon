@@ -4,6 +4,10 @@ import { Rng } from './rng';
 import { runProject } from './project';
 import { runResearch } from './research';
 import { runFramework } from './framework';
+import { runMarketing } from './marketing';
+import { investorCut, runContracts } from './contracts';
+import { pruneExpired, runEvents } from './events';
+import { runRivals } from './rivals';
 import { runStaff } from './staff';
 import { runAudience, runSales } from './sales';
 import { runFinance } from './finance';
@@ -60,16 +64,23 @@ export function advanceWeek(game: GameState): SimResult {
 }
 
 /**
- * Порядок шагов недели: лаборатория и команда обновляются до проекта (их бонусы действуют
- * сразу), проект раньше продаж, продажи раньше финансов.
+ * Порядок шагов недели: события таймлайна и лаборатория с командой — до проекта (их бонусы
+ * действуют сразу), маркетинг разгоняет хайп до продаж, продажи раньше финансов,
+ * сделки и конкуренты — в конце.
  */
 function runSteps(state: GameState, rng: Rng, events: SimEvent[]): void {
+  runEvents(state, events);
+  pruneExpired(state);
   runResearch(state, events);
   runStaff(state, rng, events);
   if (state.project?.kind === 'framework') runFramework(state, events);
   else runProject(state, rng, events);
+  runMarketing(state, events);
   runAudience(state);
   const income = runSales(state);
-  runFinance(state, events, income);
+  const cut = investorCut(state, income);
+  runFinance(state, events, income - cut);
+  runContracts(state, rng, events);
+  runRivals(state, rng);
   checkAchievements(state, events);
 }

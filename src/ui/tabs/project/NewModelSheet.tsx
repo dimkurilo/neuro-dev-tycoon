@@ -7,6 +7,7 @@ import { GPUS, gpuById } from '../../../data/gpus';
 import { FIT_LABEL, SCALES, scaleById } from '../../../data/compat';
 import { phaseWeeksTotal } from '../../../data/fields';
 import { expectedPoints } from '../../../sim/release';
+import { compatibleContracts } from '../../../sim/contracts';
 import { gpuWeeklyCostOf } from '../../../sim/project';
 import { isDomainOpen, isGpuYear, isParadigmOpen, isPlatformYear, isScaleOpen, lockReason } from '../../../sim/unlock';
 import { licensePrice } from '../../../sim/market';
@@ -110,6 +111,7 @@ export function NewModelSheet({ onClose }: { onClose: () => void }) {
   const [gpuId, setGpuId] = useState('g0');
   const [name, setName] = useState('');
   const [nameEdited, setNameEdited] = useState(false);
+  const [contractId, setContractId] = useState<number | null>(null);
 
   if (!game) return null;
   const domain = domainId ? domainById(domainId) : null;
@@ -135,7 +137,7 @@ export function NewModelSheet({ onClose }: { onClose: () => void }) {
       return;
     }
     if (!domain || !paradigmId) return;
-    const error = startModel({ name, domain: domain.id, paradigm: paradigmId, platform: platformId, scale: scaleId, gpu: gpuId });
+    const error = startModel({ name, domain: domain.id, paradigm: paradigmId, platform: platformId, scale: scaleId, gpu: gpuId, contractId });
     if (error) toast(error, 'bad');
     else onClose();
   };
@@ -273,6 +275,8 @@ export function NewModelSheet({ onClose }: { onClose: () => void }) {
       const paradigm = paradigmId ? paradigmById(paradigmId) : null;
       const fit = domain && paradigm ? knownFit(game, domain.id, paradigm.id) : null;
       const weeks = phaseWeeksTotal(scale.weeks);
+      // заказы в работе, под которые подходит выбранная связка
+      const contracts = domain && paradigm ? compatibleContracts(game, { domain: domain.id, paradigm: paradigm.id, platform: platformId, scale: scaleId }) : [];
       body = (
         <>
           <StepHeader title="Как назовём модель?" hint="Название и итог" text="Название увидят агентства и клиенты в чартах." />
@@ -292,6 +296,26 @@ export function NewModelSheet({ onClose }: { onClose: () => void }) {
               <Icon name="spark" className="h-5 w-5" />
             </Btn>
           </div>
+          {contracts.length > 0 && (
+            <>
+              <div className="mb-2 mt-5 flex min-h-9 items-center">
+                <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">Заказ клиента</h3>
+              </div>
+              <div className="flex flex-col gap-2">
+                <OptionCard icon="doc" title="Без заказа" selected={contractId === null} onPress={() => setContractId(null)} />
+                {contracts.map((contract) => (
+                  <OptionCard
+                    key={contract.uid}
+                    icon="briefcase"
+                    title={contract.title}
+                    sub={`${contract.client} · оплата ${fmtMoney(contract.pay)} · ещё ${contract.deadlineWeek - game.week} нед.`}
+                    selected={contractId === contract.uid}
+                    onPress={() => setContractId(contract.uid)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           <DefList
             className="mt-4"
             rows={[

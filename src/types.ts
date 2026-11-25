@@ -539,7 +539,8 @@ export type EventCategory = 'research' | 'market' | 'platform' | 'gpu' | 'regula
 
 export type EventEffect =
   | { type: 'unlock'; paradigms?: string[]; platforms?: string[]; gpus?: string[] }
-  | { type: 'discount'; research: string[]; mult: number }
+  /** исследования дешевеют вдвое */
+  | { type: 'discount'; research: string[] }
   | { type: 'trend'; domain: string; mult: number; weeks: number }
   | { type: 'market'; mult: number; weeks: number }
   | { type: 'rp'; amount: number }
@@ -589,7 +590,8 @@ export interface CompetitorModel {
   domain: string;
   rating: number;
   week: number;
-  lastRevenue: number;
+  /** пик недельной выручки, из которого считается кривая продаж */
+  potential: number;
 }
 
 // ─── Журналы ───
@@ -684,6 +686,7 @@ export interface GameState {
   investorOffer: InvestorOffer | null;
   investor: InvestorDeal | null;
   investorCooldown: number;
+  grantCooldown: number;
   grantOffers: GrantOffer[];
   grants: ActiveGrant[];
   nextDealId: number;
@@ -740,6 +743,7 @@ export type Modal =
   | { kind: 'research'; nodeId: string }
   | { kind: 'framework' }
   | { kind: 'frameworkReport' }
+  | { kind: 'newExpansion' }
   | { kind: 'save' }
   | { kind: 'confirm'; title: string; text: string; confirmLabel: string; danger?: boolean; onConfirm: () => void };
 

@@ -147,6 +147,12 @@ export const BALANCE = {
     investorEveryWeeks: 40,
     grantEveryWeeks: 26,
     grantMaxActive: 2,
+    /** показатель степени, с которым растут цены контрактов и грантов (1 — как рынок) */
+    dealGrowthExp: 0.8,
+    /** множитель доли инвестора к его предложению */
+    investorMin: 40000,
+    investorWeeksOfRevenue: 78,
+    grantMin: 25000,
     /** средний интервал между релизами одной лаборатории-конкурента, недель */
     labReleaseEvery: 30,
     labRatingNoise: 0.7,

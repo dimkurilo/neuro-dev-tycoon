@@ -199,7 +199,7 @@ export function DefList({ rows, className }: { rows: (readonly [string, ReactNod
     <dl className={cn('divide-y divide-line rounded-card border border-line bg-panel2', className)}>
       {rows.map(([label, value]) => (
         <div key={label} className="flex min-h-11 items-center gap-3 px-3 py-1">
-          <dt className="shrink-0 text-muted">{label}</dt>
+          <dt className="text-muted">{label}</dt>
           <dd className="min-w-0 flex-1 text-right font-semibold break-words">{value}</dd>
         </div>
       ))}

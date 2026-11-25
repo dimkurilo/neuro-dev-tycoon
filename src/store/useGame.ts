@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { StateStorage } from 'zustand/middleware';
-import type { FieldId, GameState, Modal, Screen, SimEvent, Speed, TabId, Toast, Tone } from '../types';
+import type { ExpansionType, FieldId, GameState, Modal, Screen, SimEvent, Speed, TabId, Toast, Tone } from '../types';
 import { advanceWeek } from '../sim/tick';
 import { createGame } from '../sim/game';
 import { Rng } from '../sim/rng';
@@ -12,6 +12,9 @@ import { activateBoost } from '../sim/boosts';
 import { fire, hire, postJobs, sendTraining, sendVacation, setFocus, toggleProject } from '../sim/staff';
 import { startResearch } from '../sim/research';
 import { startFramework } from '../sim/framework';
+import { acceptGrant, acceptInvestor, dropContract, rejectInvestor, takeContract } from '../sim/contracts';
+import { startCampaign } from '../sim/marketing';
+import { startExpansion } from '../sim/expansions';
 import { exportSave, normalizeGame, parseSave, SAVE_KEY, SAVE_VERSION } from '../sim/save';
 
 // localStorage бывает недоступен (приватный режим, запрещённые куки) — тогда живём в памяти,
@@ -88,6 +91,13 @@ export interface GameStore {
   activateBoost(id: string): string | null;
   startResearch(nodeId: string): string | null;
   startFramework(featureIds: readonly string[], name: string): string | null;
+  takeContract(uid: number): string | null;
+  dropContract(uid: number): string | null;
+  acceptInvestor(): string | null;
+  rejectInvestor(): void;
+  acceptGrant(id: number): string | null;
+  startCampaign(id: string): string | null;
+  startExpansion(baseId: number, type: ExpansionType, name: string): string | null;
 }
 
 /** листы, при открытии которых мир продолжает идти; остальные останавливают время */
@@ -265,6 +275,16 @@ export const useGame = create<GameStore>()(
         activateBoost: (id) => act((draft, rng) => activateBoost(draft, id, rng)),
         startResearch: (nodeId) => act((draft) => startResearch(draft, nodeId)),
         startFramework: (ids, name) => act((draft) => startFramework(draft, ids, name)),
+        takeContract: (uid) => act((draft) => takeContract(draft, uid)),
+        dropContract: (uid) => act((draft) => dropContract(draft, uid)),
+        acceptInvestor: () => act((draft) => acceptInvestor(draft)),
+        rejectInvestor: () => act((draft) => {
+          rejectInvestor(draft);
+          return null;
+        }),
+        acceptGrant: (id) => act((draft) => acceptGrant(draft, id)),
+        startCampaign: (id) => act((draft) => startCampaign(draft, id)),
+        startExpansion: (baseId, type, name) => act((draft, rng) => startExpansion(draft, baseId, type, rng, name)),
       };
     },
     {

@@ -7,13 +7,15 @@ import { DEGRADATIONS, severityPoints } from '../data/degradations';
 import { gpuById } from '../data/gpus';
 import { scaleById } from '../data/compat';
 import { platformById, platformReach } from '../data/platforms';
+import { EXPANSIONS } from '../data/expansions';
 import { suggestModelName } from '../data/names';
 import { yearsSince } from './time';
 import { getMods, type Mods } from './mods';
 import type { Rng } from './rng';
-import { comboKey, expectedPoints, marketMultiplier, ratingFactor, reviewModel, scoreProject, trendMultiplier } from './release';
+import { comboKey, expectedFor, marketMultiplier, ratingFactor, reviewModel, scoreProject, trendMultiplier } from './release';
 import { lockReason } from './unlock';
 import { checkAchievements } from './achievements';
+import { activeContract, contractMatches, settleContract, settleGrants } from './contracts';
 import { clamp } from './util';
 
 export interface ModelInput {
@@ -23,6 +25,8 @@ export interface ModelInput {
   platform: string;
   scale: ScaleId;
   gpu: string;
+  /** заказ клиента, под который выпускается модель */
+  contractId?: number | null;
 }
 
 /** почему модель с такими параметрами не запустить; null — можно */
@@ -42,6 +46,11 @@ export function validateModel(state: GameState, input: ModelInput): string | nul
   if (scaleLock) return scaleLock;
   if (!state.platforms.includes(input.platform)) return 'Сначала купите лицензию на платформу';
   if (!state.gpus.includes(input.gpu)) return 'Сначала арендуйте эти вычисления';
+  if (input.contractId !== undefined && input.contractId !== null) {
+    const contract = activeContract(state, input.contractId);
+    if (!contract) return 'Этого заказа уже нет в работе';
+    if (!contractMatches(contract, input)) return 'Модель не соответствует требованиям заказа';
+  }
   return null;
 }
 
@@ -71,7 +80,7 @@ export function createModel(state: GameState, rng: Rng, input: ModelInput): Proj
     fields,
     degradations: [],
     nextDegradationId: 1,
-    contractId: null,
+    contractId: input.contractId ?? null,
     startedWeek: state.week,
     spent: 0,
     lastPoints: 0,
@@ -199,7 +208,7 @@ export function runProject(state: GameState, rng: Rng, events: SimEvent[]): void
       };
     }
     // чем сильнее команда обгоняет ожидания рынка, тем чаще что-то ломается
-    const expectedPerWeek = expectedPoints(project.scale, state.week) / phaseWeeksTotal(project.weeksPerPhase);
+    const expectedPerWeek = expectedFor(project, state.week) / phaseWeeksTotal(project.weeksPerPhase);
     const intensity = expectedPerWeek > 0 ? points / expectedPerWeek : 0;
     const fresh = rollDegradations(project, fields, intensity, mods, rng);
     project = {
@@ -279,7 +288,8 @@ export function releaseProject(state: GameState, rng: Rng, events: SimEvent[]): 
   const { reviews, rating } = reviewModel(report, rng);
   const potential = salesPotential(state, project.domain, project.platform, rating);
   const fee = complianceFee(state, project.domain);
-  const fansGained = Math.max(0, rating - BALANCE.fans.ratingBase) * BALANCE.fans.perRatingPoint + state.hype * BALANCE.fans.perHype;
+  const expansionDef = project.kind === 'expansion' && project.expansion ? EXPANSIONS[project.expansion] : undefined;
+  const fansGained = (Math.max(0, rating - BALANCE.fans.ratingBase) * BALANCE.fans.perRatingPoint + state.hype * BALANCE.fans.perHype) * (expansionDef?.fansMult ?? 1);
 
   const model: ReleasedModel = {
     id: state.nextModelId,
@@ -308,6 +318,23 @@ export function releaseProject(state: GameState, rng: Rng, events: SimEvent[]): 
   state.models = [...state.models, model];
   state.project = null;
   state.money -= fee;
+
+  // версия модели: базовая модель получает новую волну продаж и запись в линейке
+  const base = project.baseModelId !== null ? state.models.find((m) => m.id === project.baseModelId) : undefined;
+  if (base && expansionDef) {
+    state.models = state.models.map((m) =>
+      m.id === base.id
+        ? {
+            ...m,
+            waves: [...m.waves, { startWeek: state.week, potential: potential * expansionDef.waveMult }],
+            versions: [...m.versions, { type: expansionDef.id, name: model.name, rating, week: state.week }],
+          }
+        : m,
+    );
+  }
+  const contract = activeContract(state, project.contractId);
+  if (contract) settleContract(state, contract, rating, events);
+  settleGrants(state, project.domain, rating, events);
   state.fans += fansGained;
   state.hype *= BALANCE.hype.afterRelease;
 
@@ -328,6 +355,7 @@ export function releaseProject(state: GameState, rng: Rng, events: SimEvent[]): 
     perfectReleases: s.perfectReleases + (reviews.every((r) => r.score >= 9.95) ? 1 : 0),
     cleanReleases: s.cleanReleases + (report.degradationPenalty === 0 ? 1 : 0),
     flagships: s.flagships + (project.scale === 'flagship' ? 1 : 0),
+    versionsMade: s.versionsMade + (expansionDef ? 1 : 0),
     paradigmsUsed: s.paradigmsUsed.includes(project.paradigm) ? s.paradigmsUsed : [...s.paradigmsUsed, project.paradigm],
     lastReleaseWeek: state.week,
   };

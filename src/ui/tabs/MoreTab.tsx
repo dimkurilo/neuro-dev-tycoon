@@ -3,6 +3,7 @@ import { officeById } from '../../data/offices';
 import { weeklyCosts } from '../../sim/finance';
 import { useGame } from '../../store/useGame';
 import { Btn, Card, DefList, SectionTitle, Stat } from '../primitives';
+import { ChartsSection } from './Charts';
 import { fmtDuration, fmtInt, fmtMoney, plural } from '../format';
 
 function WeekReport({ game }: { game: GameState }) {
@@ -38,6 +39,7 @@ export function MoreTab() {
   return (
     <div>
       <WeekReport game={game} />
+      <ChartsSection />
       <SectionTitle>Лаборатория</SectionTitle>
       <DefList
         rows={[

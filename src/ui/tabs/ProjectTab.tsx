@@ -25,6 +25,11 @@ export function ProjectTab() {
           <Btn variant="primary" full icon="plus" className="mt-2" onClick={() => openModal({ kind: 'newModel' })}>
             Новая модель
           </Btn>
+          {released > 0 && (
+            <Btn full icon="copy" onClick={() => openModal({ kind: 'newExpansion' })}>
+              Новая версия модели
+            </Btn>
+          )}
         </Card>
       )}
       {framework && (

@@ -2,6 +2,7 @@ import type { Complaint, GameState, Project, QualityReport, Review, ScaleId } fr
 import { BALANCE } from '../data/balance';
 import { FIELDS } from '../data/fields';
 import { fitOf, idealShare, scaleById } from '../data/compat';
+import { EXPANSIONS } from '../data/expansions';
 import { AGENCIES, quoteBand } from '../data/agencies';
 import { yearsSince } from './time';
 import { getMods } from './mods';
@@ -16,6 +17,12 @@ export function comboKey(domain: string, paradigm: string): string {
 /** сколько очков рынок ждёт от модели такого масштаба в эту неделю */
 export function expectedPoints(scale: ScaleId, week: number): number {
   return scaleById(scale).expected * Math.pow(BALANCE.growth.expectations, yearsSince(week));
+}
+
+/** ожидания рынка для проекта: версии моделей оцениваются мягче или строже базового масштаба */
+export function expectedFor(project: Pick<Project, 'scale' | 'kind' | 'expansion'>, week: number): number {
+  const base = expectedPoints(project.scale, week);
+  return project.kind === 'expansion' && project.expansion ? base * EXPANSIONS[project.expansion].expectedMult : base;
 }
 
 /** во сколько раз оценка снижает выручку: 1 у идеальной модели, минимум у провальной */
@@ -60,7 +67,7 @@ export function scoreProject(state: GameState, project: Project): QualityReport 
   }
   deviation = weightSum > 0 ? deviation / weightSum : 0;
 
-  const expected = expectedPoints(project.scale, state.week);
+  const expected = expectedFor(project, state.week);
   const ratio = expected > 0 ? total / expected : 0;
   const pointsScore = 10 * (1 - Math.exp(-BALANCE.quality.pointCurve * ratio));
   const balanceFactor = 1 - BALANCE.quality.balancePenalty * Math.min(1, deviation / BALANCE.quality.balanceScale);

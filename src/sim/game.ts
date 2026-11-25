@@ -1,6 +1,7 @@
 import type { GameState, Staff } from '../types';
 import { BALANCE } from '../data/balance';
 import { PALETTE } from '../data/names';
+import { LABS } from '../data/labs';
 import { Rng, randomSeed } from './rng';
 import { refreshCandidates } from './staff';
 
@@ -62,6 +63,7 @@ export function createGame(companyName: string, founderName: string, seed: numbe
     investorOffer: null,
     investor: null,
     investorCooldown: 24,
+    grantCooldown: 13,
     grantOffers: [],
     grants: [],
     nextDealId: 1,
@@ -76,7 +78,7 @@ export function createGame(companyName: string, founderName: string, seed: numbe
     gpuCostMult: 1,
     revenueMult: 1,
     compliance: [],
-    labs: [],
+    labs: LABS.map((lab) => ({ ...lab })),
     competitors: [],
     nextCompetitorId: 1,
     news: [],

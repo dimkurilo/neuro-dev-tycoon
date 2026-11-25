@@ -1,6 +1,7 @@
 import type { Fit, Project } from '../../../types';
 import { DEV_PHASES, FIELDS, phaseName, phaseWeeksTotal } from '../../../data/fields';
 import { DEGRADATION_BY_ID, DEG_TAG_LABEL, SEVERITY_LABEL } from '../../../data/degradations';
+import { EXPANSION_LABEL } from '../../../data/describe';
 import { domainById } from '../../../data/domains';
 import { FIT_LABEL, idealShare, scaleById } from '../../../data/compat';
 import { paradigmById } from '../../../data/paradigms';
@@ -71,6 +72,11 @@ export function ProjectView({ project }: { project: Project }) {
             <div className="mt-1.5 flex flex-wrap gap-1">
               <Chip icon={paradigm.icon}>{paradigm.name}</Chip>
               {fit && <Chip tone={FIT_TONE[fit]}>{FIT_LABEL[fit]}</Chip>}
+              {project.kind === 'expansion' && project.expansion && (
+                <Chip tone="accent" icon="copy">
+                  {EXPANSION_LABEL[project.expansion]}
+                </Chip>
+              )}
             </div>
           </div>
         </div>
