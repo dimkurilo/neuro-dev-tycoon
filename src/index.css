@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0f1a;
+  --color-panel: #131a2b;
+  --color-panel2: #1a2338;
+  --color-panel3: #24304d;
+  --color-line: #2a3552;
+  --color-text: #e9edf7;
+  --color-muted: #94a1c0;
+  --color-accent: #8b7bff;
+  --color-research: #b89dff;
+  --color-engineering: #41d4f0;
+  --color-good: #3ddc84;
+  --color-warn: #ffb020;
+  --color-bad: #ff5a6e;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Noto Sans", Arial, sans-serif;
+  --radius-card: 16px;
+
+  --animate-sheet-in: sheet-in 0.24s ease-out;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-toast-in: toast-in 0.22s ease-out;
+  --animate-pop: pop 0.28s ease-out;
+
+  @keyframes sheet-in {
+    from { transform: translateY(48px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes toast-in {
+    from { transform: translateY(-12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.96); opacity: 0; }
+    60% { transform: scale(1.02); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+}
+
+/* Базовые стили живут в слое base: утилиты на элементе всегда сильнее. */
+@layer base {
+  :root {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: #070a12;
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Собственные утилиты — в общем слое с Tailwind, чтобы участвовать в каскаде и вариантах. */
+@utility safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility field {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel2);
+  padding: 10px 14px;
+  outline: none;
+  &::placeholder {
+    color: var(--color-muted);
+  }
+  &:focus {
+    border-color: var(--color-accent);
+  }
+}
+
+/* Крупный тач-слайдер: дорожка 12px, бегунок 28px, зона касания 44px.
+   Двухцветную дорожку задаёт inline-переменная --track. */
+@utility slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 12px;
+    border-radius: 999px;
+    background: var(--track, var(--color-line));
+  }
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -8px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--color-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  }
+  &::-moz-range-track {
+    height: 12px;
+    border-radius: 999px;
+    background: var(--track, var(--color-line));
+  }
+  &::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--color-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+}
