@@ -1,6 +1,10 @@
 import type { GameState, SimEvent, SimResult, Speed } from '../types';
 import { BALANCE } from '../data/balance';
 import { Rng } from './rng';
+import { runProject } from './project';
+import { runAudience, runSales } from './sales';
+import { runFinance } from './finance';
+import { checkAchievements } from './achievements';
 
 /**
  * Фиксированный тик: 1 тик = 1 игровая неделя. Часы получают реальное время,
@@ -52,6 +56,11 @@ export function advanceWeek(game: GameState): SimResult {
   return { state, events };
 }
 
-function runSteps(_state: GameState, _rng: Rng, _events: SimEvent[]): void {
-  // шаги симуляции подключаются по мере вех
+/** порядок шагов недели: проект раньше продаж, продажи раньше финансов */
+function runSteps(state: GameState, rng: Rng, events: SimEvent[]): void {
+  runProject(state, rng, events);
+  runAudience(state);
+  const income = runSales(state);
+  runFinance(state, events, income);
+  checkAchievements(state, events);
 }

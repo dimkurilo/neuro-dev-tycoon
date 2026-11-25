@@ -173,13 +173,37 @@ export function Sheet({ title, onClose, children, footer, tall }: { title?: stri
   );
 }
 
-export function Notice({ tone = 'info', icon, children }: { tone?: Tone | 'warn'; icon?: IconName; children: ReactNode }) {
+export function Notice({ tone = 'info', icon, className, children }: { tone?: Tone | 'warn'; icon?: IconName; className?: string; children: ReactNode }) {
   const map = { info: 'border-line bg-panel2 text-muted', good: 'border-good/40 bg-good/10 text-good', bad: 'border-bad/40 bg-bad/10 text-bad', warn: 'border-warn/40 bg-warn/10 text-warn' } as const;
   return (
-    <div className={cn('flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm', map[tone])}>
+    <div className={cn('flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm', map[tone], className)}>
       {icon && <Icon name={icon} className="mt-0.5 h-4 w-4 shrink-0" />}
       <div className="min-w-0">{children}</div>
     </div>
+  );
+}
+
+/** квадратная плитка с иконкой — слева от названия в карточках */
+export function IconBox({ icon, tone = 'accent' }: { icon: IconName; tone?: 'accent' | 'warn' | 'muted' | 'good' }) {
+  const color = { accent: 'text-accent', warn: 'text-warn', muted: 'text-muted', good: 'text-good' }[tone];
+  return (
+    <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-panel2', color)}>
+      <Icon name={icon} className="h-[22px] w-[22px]" />
+    </span>
+  );
+}
+
+/** список «имя — значение»: сводки и итоги */
+export function DefList({ rows, className }: { rows: (readonly [string, ReactNode])[]; className?: string }) {
+  return (
+    <dl className={cn('divide-y divide-line rounded-card border border-line bg-panel2', className)}>
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex min-h-11 items-center gap-3 px-3 py-1">
+          <dt className="shrink-0 text-muted">{label}</dt>
+          <dd className="min-w-0 flex-1 text-right font-semibold break-words">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

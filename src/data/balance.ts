@@ -61,10 +61,15 @@ export const BALANCE = {
     scaleGpuShare: { pet: 0.4, product: 1, flagship: 2.5 },
   },
   quality: {
-    /** pointsScore = 10 × (1 − e^(−pointCurve × ratio)) */
-    pointCurve: 1.609,
-    /** максимальная доля оценки, теряемая при полностью перекошенном балансе */
+    /** pointsScore = 10 × (1 − e^(−pointCurve × ratio)); ratio 1 → 7.4, ratio 2 → 9.3 */
+    pointCurve: 1.35,
+    /** идеальная доля исследований в поле = shareBase + сдвиги домена и парадигмы, в границах shareMin…shareMax */
+    shareBase: 0.5,
+    shareMin: 0.12,
+    shareMax: 0.88,
+    /** доля оценки, теряемая при среднем отклонении balanceScale; при меньшем отклонении штраф пропорционален */
     balancePenalty: 0.45,
+    balanceScale: 0.5,
     fit: { ideal: 1, ok: 0.85, weird: 0.68 },
     /** множитель новизны по числу прошлых релизов с той же парой домен×парадигма */
     novelty: [1.12, 1.06, 1, 1, 0.96, 0.96, 0.92],

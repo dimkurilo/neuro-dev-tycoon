@@ -1,4 +1,6 @@
 // Общие типы игры: контент, состояние, события симуляции.
+import type { IconName } from './ui/icons';
+
 
 // ─── Базовые ───
 export type Speed = 0 | 1 | 2 | 4;
@@ -38,7 +40,7 @@ export type DomainGroup = 'vision' | 'language' | 'speech' | 'generative' | 'tab
 export interface Domain {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   group: DomainGroup;
   desc: string;
   research: string | null;
@@ -55,7 +57,7 @@ export interface Domain {
 export interface Paradigm {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   research: string | null;
   year: number;
@@ -78,7 +80,7 @@ export interface Scale {
 export interface Platform {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   /** разовая плата за лицензию */
   license: number;
@@ -307,7 +309,7 @@ export interface ResearchNode {
   id: string;
   name: string;
   desc: string;
-  icon: string;
+  icon: IconName;
   kind: ResearchKind;
   tier: number;
   row: number;
@@ -328,7 +330,7 @@ export interface FeatureAffinity {
 export interface Feature {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   research: string;
   weeks: number;
@@ -431,7 +433,7 @@ export interface ActiveGrant {
 export interface CampaignDef {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   cost: number;
   weeks: number;
@@ -451,7 +453,7 @@ export interface ActiveCampaign {
 export interface BoostDef {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   cost: number;
   weeks: number;
@@ -475,7 +477,7 @@ export interface ActiveBoost {
 export interface CourseDef {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   cost: number;
   weeks: number;
@@ -493,10 +495,27 @@ export interface Loan {
 }
 
 // ─── Офис ───
+export interface Office {
+  id: string;
+  name: string;
+  desc: string;
+  capacity: number;
+  /** аренда в неделю */
+  rent: number;
+  /** разовая стоимость переезда */
+  moveCost: number;
+  research: string | null;
+  /** сетка офиса: число строк при шести колонках и индексы клеток со столами */
+  rows: number;
+  desks: number[];
+  /** сколько объектов можно расставить */
+  objectLimit: number;
+}
+
 export interface OfficeModuleDef {
   id: string;
   name: string;
-  icon: string;
+  icon: IconName;
   desc: string;
   cost: number;
   upkeep: number;
@@ -621,7 +640,12 @@ export interface Stats {
   worstWeeklyLoss: number;
   lowRatedReleases: number;
   perfectReleases: number;
+  cleanReleases: number;
+  flagships: number;
+  chartTops: number;
   lowRatedWeeks: number;
+  paradigmsUsed: string[];
+  lastReleaseWeek: number;
 }
 
 // ─── Состояние ───
@@ -706,6 +730,8 @@ export type Modal =
   | { kind: 'release'; modelId: number }
   | { kind: 'insolvency'; weeksLeft: number }
   | { kind: 'achievement'; id: string }
+  | { kind: 'newModel' }
+  | { kind: 'model'; modelId: number }
   | { kind: 'save' }
   | { kind: 'confirm'; title: string; text: string; confirmLabel: string; danger?: boolean; onConfirm: () => void };
 

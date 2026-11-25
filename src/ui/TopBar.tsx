@@ -2,7 +2,7 @@ import type { Speed } from '../types';
 import { useGame } from '../store/useGame';
 import { Icon, type IconName } from './icons';
 import { Stat, cn } from './primitives';
-import { fmtCompact, fmtInt, fmtSigned } from './format';
+import { fmtCompact, fmtInt } from './format';
 import { formatDate } from '../sim/time';
 
 const SPEEDS: Speed[] = [0, 1, 2, 4];
@@ -44,12 +44,13 @@ export function TopBar() {
         </div>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-1.5">
+        {/* саб-строка баланса — изменение за неделю; место в плитке всего ~60px, поэтому коротко */}
         <Stat
           compact
           icon="coin"
           label="Баланс"
           value={fmtCompact(game.money)}
-          sub={Math.abs(Math.round(delta)) > 0 ? `${fmtSigned(delta)} за нед.` : 'кредиты'}
+          sub={Math.abs(Math.round(delta)) > 0 ? `${delta > 0 ? '▲' : '▼'} ${fmtCompact(Math.abs(delta))}` : 'за неделю'}
           tone={game.money < 0 ? 'bad' : undefined}
         />
         <Stat compact icon="spark" label="И-очки" value={fmtInt(Math.floor(game.rp))} />

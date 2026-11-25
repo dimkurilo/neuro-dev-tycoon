@@ -22,9 +22,41 @@ function check(cond, label) {
 }
 const step = (title) => console.log(`\n▸ ${title}`);
 const shot = (name) => page.screenshot({ path: path.join(shots, `${name}.png`) });
+const headerText = () => page.locator('header').innerText();
+const weekOf = (text) => Number(/нед\. (\d+)/.exec(text)?.[1]);
 
 const executablePath = process.env.SMOKE_EXECUTABLE || undefined;
-const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : { channel: 'chrome' }) });
+// сторожевой таймер: зависший запуск браузера не должен держать терминал
+const watchdog = setTimeout(() => {
+  console.error('\nСмоук прерван: превышено общее время (180 с)');
+  process.exit(2);
+}, 180000);
+
+/**
+ * Запуск системного Chrome иногда зависает (процесс поднят, ответа нет), и таймаут Playwright
+ * при этом не срабатывает. Поэтому гоняем запуск с собственным таймером и повторяем попытку;
+ * поздно поднявшийся браузер закрываем, чтобы не оставлять сирот.
+ */
+async function launchBrowser(attempts = 3) {
+  const options = { headless: true, timeout: 30000, ...(executablePath ? { executablePath } : { channel: 'chrome' }) };
+  for (let attempt = 1; ; attempt++) {
+    const pending = chromium.launch(options);
+    const guard = new Promise((_, reject) =>
+      setTimeout(() => {
+        pending.then((b) => b.close().catch(() => {})).catch(() => {});
+        reject(new Error(`запуск браузера не завершился за 45 с (попытка ${attempt})`));
+      }, 45000),
+    );
+    try {
+      return await Promise.race([pending, guard]);
+    } catch (err) {
+      if (attempt >= attempts) throw err;
+      console.log(`  … ${err.message}; пробую ещё раз`);
+    }
+  }
+}
+
+const browser = await launchBrowser();
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 2,
@@ -46,8 +78,17 @@ page.on('request', (r) => {
   if (!/^(file|data|blob|about):/.test(u)) external.push(u);
 });
 
-const version = browser.version();
-console.log(`Браузер: Chrome ${version}, вьюпорт 390×844, file://`);
+console.log(`Браузер: Chrome ${browser.version()}, вьюпорт 390×844, file://`);
+
+/** закрывает очередь модалок-событий (достижения, новости, предупреждения), пока мир на паузе */
+async function dismissModals(max = 6) {
+  for (let i = 0; i < max; i++) {
+    const btn = page.locator('[role="dialog"] button', { hasText: /^(Отлично|Понятно|Разобраться)$/ }).first();
+    if ((await btn.count()) === 0) return;
+    await btn.tap();
+    await page.waitForTimeout(350);
+  }
+}
 
 try {
   step('Загрузка одного файла по file://');
@@ -55,12 +96,13 @@ try {
   await page.getByRole('heading', { level: 1 }).waitFor();
   check((await page.title()) === 'Neuro Lab Tycoon', 'заголовок вкладки «Neuro Lab Tycoon»');
   check(await page.getByRole('button', { name: 'Новая игра' }).isVisible(), 'в меню есть «Новая игра»');
-  check(!(await page.getByRole('button', { name: 'Продолжить' }).first().isVisible()), 'без сейва кнопки «Продолжить» нет');
+  check((await page.getByRole('button', { name: 'Продолжить' }).count()) === 0, 'без сейва кнопки «Продолжить» нет');
   await shot('01-menu');
 
   step('Интро и основание лаборатории');
   await page.getByRole('button', { name: 'Новая игра' }).tap();
   await page.getByRole('button', { name: 'Дальше' }).waitFor();
+  await page.waitForTimeout(300);
   await shot('02-intro');
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Дальше' }).tap();
   await page.getByRole('button', { name: 'Открыть лабораторию' }).tap();
@@ -72,24 +114,34 @@ try {
   await page.getByText('янв 2012 · нед. 2').waitFor({ timeout: 8000 });
   check(true, 'на скорости 1× неделя проходит за пару секунд');
   await page.getByRole('button', { name: 'Пауза' }).tap();
-  const pausedAt = await page.locator('header').innerText();
+  const pausedWeek = weekOf(await headerText());
   await page.waitForTimeout(3200);
-  check((await page.locator('header').innerText()).includes(pausedAt.match(/нед\. \d+/)[0]), 'на паузе время стоит');
+  check(weekOf(await headerText()) === pausedWeek, 'на паузе время стоит');
   await page.getByRole('button', { name: 'Ускорение ×4' }).tap();
-  await page.waitForFunction((before) => /нед\. (\d+)/.exec(document.querySelector('header').innerText)?.[0] !== before, pausedAt.match(/нед\. \d+/)[0], { timeout: 6000 });
-  check(true, 'скорость ×4 снова запускает время');
+  await page.waitForFunction((before) => Number(/нед\. (\d+)/.exec(document.querySelector('header').innerText)?.[1]) > before, pausedWeek, { timeout: 6000 });
   await page.getByRole('button', { name: 'Пауза' }).tap();
+  check(weekOf(await headerText()) > pausedWeek, 'скорость ×4 снова запускает время');
 
   step('Шесть вкладок нижней навигции');
-  for (const label of ['Проект', 'Лаборатория', 'Команда', 'Офис', 'Рынок', 'Ещё']) {
-    await page.getByRole('tab', { name: label }).tap();
-    check(await page.getByRole('heading', { name: label, level: 2 }).isVisible(), `вкладка «${label}» открывается`);
+  // [вкладка, заголовок экрана]
+  const screens = [
+    ['Проект', 'Первая модель — самая важная'],
+    ['Лаборатория', 'Лаборатория'],
+    ['Команда', 'Команда'],
+    ['Офис', 'Офис'],
+    ['Рынок', 'Платформы деплоя'],
+    ['Ещё', 'Прошлая неделя'],
+  ];
+  for (const [tab, heading] of screens) {
+    await page.getByRole('tab', { name: tab }).tap();
+    check(await page.getByRole('heading', { name: heading }).first().isVisible(), `вкладка «${tab}» открывается`);
   }
-  await shot('04-tab');
+  await shot('04-market');
 
   step('Минимальная ширина 360px');
   await page.setViewportSize({ width: 360, height: 740 });
   await page.getByRole('tab', { name: 'Лаборатория' }).tap();
+  await page.waitForTimeout(250);
   await shot('05-min-360');
   const overflow = await page.evaluate(() => {
     const bad = [];
@@ -100,25 +152,102 @@ try {
   });
   check(overflow.doc <= 0, 'страница не уезжает по горизонтали');
   check(overflow.bad.length === 0, `подписи навигации и топбара помещаются${overflow.bad.length ? `: ${overflow.bad.join(' | ')}` : ''}`);
-  // подписи вкладок не должны слипаться в одну строку
   const boxes = await page.locator('nav button span').evaluateAll((els) => els.map((el) => el.getBoundingClientRect()));
   let minGap = Infinity;
   for (let i = 1; i < boxes.length; i++) minGap = Math.min(minGap, boxes[i].left - boxes[i - 1].right);
-  const targets = await page.locator('nav button').evaluateAll((els) => Math.min(...els.map((el) => el.getBoundingClientRect().height)));
+  const navHeight = await page.locator('nav button').evaluateAll((els) => Math.min(...els.map((el) => el.getBoundingClientRect().height)));
   check(minGap >= 8, `промежуток между подписями вкладок ≥ 8px (фактически ${minGap.toFixed(1)}px)`);
-  check(targets >= 44, `высота вкладок ≥ 44px (фактически ${targets}px)`);
+  check(navHeight >= 44, `высота вкладок ≥ 44px (фактически ${navHeight}px)`);
   await page.setViewportSize({ width: 390, height: 844 });
 
   step('Сейв переживает перезагрузку файла');
-  const before = await page.locator('header').innerText();
+  await page.getByRole('tab', { name: 'Проект' }).tap();
+  const before = await headerText();
   await page.reload();
-  await page.getByRole('button', { name: 'Продолжить' }).waitFor();
-  check(true, 'после перезагрузки в меню есть «Продолжить»');
   await page.getByRole('button', { name: 'Продолжить' }).tap();
   await page.getByRole('tab', { name: 'Проект' }).waitFor();
-  const after = await page.locator('header').innerText();
-  check(after.match(/нед\. \d+/)[0] === before.match(/нед\. \d+/)[0], 'неделя и лаборатория восстановлены из localStorage');
+  check(weekOf(await headerText()) === weekOf(before), 'неделя восстановлена из localStorage');
   check(await page.getByRole('button', { name: 'Пауза' }).getAttribute('aria-pressed') === 'true', 'после загрузки игра стоит на паузе');
+
+  step('Мастер создания модели: домен и парадигма');
+  await page.getByRole('button', { name: 'Новая модель' }).tap();
+  await page.getByRole('heading', { name: 'Что будет делать модель?' }).waitFor();
+  await page.getByRole('button', { name: 'Компьютерное зрение' }).tap();
+  check(await page.getByText('Распознавание и анализ изображений и видео.').isVisible(), 'домен выбран, видно описание');
+  await shot('06-wizard-domain');
+  await page.getByRole('button', { name: 'Дальше' }).tap();
+  await page.getByRole('button', { name: /Рекуррентные сети/ }).tap();
+  await shot('07-wizard-paradigm');
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Дальше' }).tap();
+  await page.getByRole('heading', { name: 'Как назовём модель?' }).waitFor();
+  const modelName = await page.getByLabel('Название модели').inputValue();
+  check(modelName.length > 0, `название сгенерировано: «${modelName}»`);
+  await shot('08-wizard-name');
+  await page.getByRole('button', { name: 'Начать разработку' }).tap();
+  await page.getByRole('heading', { name: modelName, level: 2 }).waitFor();
+  check(await page.getByText('Замысел', { exact: true }).isVisible(), 'проект запущен, первая фаза — «Замысел»');
+  await shot('09-project');
+
+  step('Слайдер исследований и инженерии');
+  const slider = page.getByLabel('Доля исследований в поле «Архитектура»');
+  const start = Number(await slider.inputValue());
+  await slider.focus();
+  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
+  const moved = Number(await slider.inputValue());
+  check(moved === start + 10, `слайдер слушается: ${start}% → ${moved}%`);
+  check(await page.getByText('Исследования 60%').first().isVisible(), 'подпись доли обновилась');
+
+  step('Три фазы разработки и стабилизация');
+  await page.getByRole('button', { name: 'Ускорение ×4' }).tap();
+  await page.getByRole('button', { name: 'Выпустить сейчас' }).waitFor({ timeout: 40000 });
+  check(await page.getByRole('list', { name: 'Фазы проекта' }).getByText('Продукт', { exact: true }).isVisible(), 'фазы «Замысел», «Обучение» и «Продукт» пройдены');
+  await shot('10-stabilization');
+  await page.getByRole('button', { name: 'Выпустить сейчас' }).tap();
+
+  step('Релиз: четыре оценки агентств');
+  await page.getByText('Модель вышла в свет').waitFor({ timeout: 8000 });
+  const scores = [];
+  for (const agency of ['Открытый Лидерборд', 'Аудит Надёжного ИИ', 'Enterprise AI Review', 'НейроЖурнал']) {
+    const row = page.locator('li', { hasText: agency }).first();
+    check(await row.isVisible(), `оценка агентства «${agency}»`);
+    const scoreLine = (await row.innerText()).split('\n').map((l) => l.trim()).find((l) => /^\d{1,2},\d$/.test(l));
+    scores.push(scoreLine ? Number(scoreLine.replace(',', '.')) : NaN);
+  }
+  check(scores.every((s) => s >= 1 && s <= 10), `оценки в шкале 1–10: ${scores.join(', ')}`);
+  await shot('11-release');
+  await page.getByRole('button', { name: 'К продажам' }).tap();
+  await page.getByText('Достижение').first().waitFor({ timeout: 4000 }).catch(() => {});
+  check((await page.locator('[role="dialog"]').count()) > 0, 'за отчётом показано достижение «Первый релиз»');
+  await dismissModals();
+
+  step('Первая неделя продаж');
+  let revenue = '';
+  for (let i = 0; i < 40 && !revenue; i++) {
+    await page.waitForTimeout(400);
+    await dismissModals();
+    const line = page.getByLabel(/Выручка за неделю/).first();
+    if (await line.count()) revenue = await line.getAttribute('aria-label');
+  }
+  check(/Выручка за неделю: \+/.test(revenue), `первая неделя продаж принесла доход (${revenue.replace('Выручка за неделю: ', '')})`);
+  const balance = /Баланс\s+(\S[\d\s.,]*\s(?:тыс\.|млн|млрд)?)/.exec(await headerText())?.[1] ?? '';
+  check(balance !== '' && balance !== '70 тыс.', `баланс вырос после продаж (${balance})`);
+  await shot('12-sales');
+
+  step('Отчёт о релизе открывается из списка');
+  await page.getByRole('button', { name: 'Пауза' }).tap();
+  await page.getByText(modelName, { exact: true }).first().tap();
+  await page.getByText('Что повлияло на оценки').waitFor();
+  check(true, 'отчёт доступен после закрытия');
+  await page.getByRole('button', { name: 'К продажам' }).tap();
+
+  step('Рынок: кредит');
+  await page.getByRole('tab', { name: 'Рынок' }).tap();
+  await page.getByRole('heading', { name: 'Кредит' }).scrollIntoViewIfNeeded();
+  const loanButton = page.getByRole('button', { name: /^Взять в кредит/ }).first();
+  await loanButton.tap();
+  await page.getByText('долг', { exact: false }).first().waitFor();
+  check(true, 'кредит оформлен, долг отображается');
+  await shot('13-market');
 } catch (err) {
   failures.push(`сценарий прерван: ${String(err).split('\n')[0]}`);
   console.log(`  ✗ сценарий прерван: ${String(err).split('\n').slice(0, 6).join('\n')}`);
@@ -130,5 +259,6 @@ check(pageErrors.length === 0, `ошибок в консоли нет${pageError
 check(external.length === 0, `внешних запросов нет${external.length ? `: ${external.slice(0, 5).join(', ')}` : ''}`);
 
 await browser.close();
+clearTimeout(watchdog);
 console.log(`\n${failures.length === 0 ? 'Смоук пройден' : `Смоук НЕ пройден: ${failures.length}`}`);
 process.exit(failures.length === 0 ? 0 : 1);

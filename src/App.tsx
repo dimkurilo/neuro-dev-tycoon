@@ -8,6 +8,15 @@ import { GameOver } from './ui/screens/GameOver';
 import { ModalHost } from './ui/ModalHost';
 import { Toasts } from './ui/Toasts';
 import { Btn, Card } from './ui/primitives';
+import { ProjectTab } from './ui/tabs/ProjectTab';
+import { MarketTab } from './ui/tabs/MarketTab';
+import { MoreTab } from './ui/tabs/MoreTab';
+
+const TABS = {
+  project: () => <ProjectTab />,
+  market: () => <MarketTab />,
+  more: () => <MoreTab />,
+};
 
 /** повреждённый сейв не должен намертво вешать игру — показываем выход в меню */
 class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -42,11 +51,12 @@ export default function App() {
       <Boundary>
         {screen === 'menu' && <MainMenu />}
         {screen === 'intro' && <Intro />}
-        {screen === 'game' && <GameShell tabs={{}} />}
+        {screen === 'game' && <GameShell tabs={TABS} />}
         {screen === 'gameover' && <GameOver />}
       </Boundary>
       <ModalHost />
-      <Toasts />
+      {/* в игре тосты рендерит оболочка — под шапкой */}
+      {screen !== 'game' && <Toasts />}
     </div>
   );
 }

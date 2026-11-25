@@ -45,10 +45,6 @@ export function fmtCount(n: number, forms: readonly [string, string, string]): s
   return `${fmtInt(n)} ${plural(n, forms)}`;
 }
 
-export function clamp(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, n));
-}
-
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
