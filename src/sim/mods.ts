@@ -1,5 +1,7 @@
 import type { DegTag, GameState, ResearchEffects } from '../types';
 import { BOOSTS } from '../data/boosts';
+import { domainById } from '../data/domains';
+import { FEATURE_BY_ID } from '../data/features';
 import { RESEARCH_BY_ID } from '../data/research';
 import { BALANCE } from '../data/balance';
 
@@ -67,8 +69,25 @@ export function getMods(state: GameState): Mods {
     if (def.burnout !== undefined && def.burnout < 0) m.burnoutRelief -= def.burnout;
   }
 
+  // функции фреймворка действуют всегда; бонусы платформ и сродства — только на подходящем проекте
+  const project = state.project;
+  const modelProject = project && project.kind !== 'framework' ? project : null;
+  for (const id of state.framework.features) {
+    const feature = FEATURE_BY_ID[id];
+    if (!feature) continue;
+    apply(m, feature);
+    if (modelProject) {
+      if (feature.platforms?.includes(modelProject.platform)) m.quality += BALANCE.project.platformFeatureBonus;
+      const group = domainById(modelProject.domain).group;
+      const affinity = feature.affinity;
+      if (affinity && (affinity.domains?.includes(modelProject.domain) || affinity.groups?.includes(group) || affinity.paradigms?.includes(modelProject.paradigm))) {
+        m.quality += affinity.bonus;
+      }
+    }
+  }
+
   // особенности ролей учитываются только для тех, кто работает на проекте
-  if (state.project) {
+  if (modelProject) {
     const roles = BALANCE.team.roles;
     let data = 0;
     let mlops = 0;

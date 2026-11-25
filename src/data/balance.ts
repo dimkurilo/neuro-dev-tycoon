@@ -74,6 +74,8 @@ export const BALANCE = {
     fixPerPower: 0.2,
     fixReferencePower: 11.25,
     stabilizationGpuShare: 0.3,
+    /** прибавка к качеству от функции фреймворка, предназначенной для платформы проекта */
+    platformFeatureBonus: 0.05,
     scaleGpuShare: { pet: 0.4, product: 1, flagship: 2.5 },
   },
   quality: {

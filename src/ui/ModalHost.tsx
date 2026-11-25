@@ -12,6 +12,8 @@ import { NewModelSheet } from './tabs/project/NewModelSheet';
 import { ReleaseModal } from './tabs/project/ReleaseModal';
 import { CoursesSheet } from './tabs/team/CoursesSheet';
 import { ResearchSheet } from './tabs/lab/ResearchSheet';
+import { FrameworkSheet } from './tabs/project/FrameworkSheet';
+import { FrameworkReport } from './tabs/project/FrameworkView';
 
 function NewsModal({ newsId, onClose }: { newsId: number; onClose: () => void }) {
   const item = useGame((s) => s.game?.news.find((n) => n.id === newsId));
@@ -191,6 +193,10 @@ export function ModalHost() {
       return <CoursesSheet staffId={modal.staffId} onClose={close} />;
     case 'research':
       return <ResearchSheet nodeId={modal.nodeId} onClose={close} />;
+    case 'framework':
+      return <FrameworkSheet onClose={close} />;
+    case 'frameworkReport':
+      return <FrameworkReport onClose={close} />;
     case 'save':
       return <SaveSheet onClose={close} />;
     case 'confirm':

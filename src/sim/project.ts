@@ -142,7 +142,7 @@ export function gpuWeeklyCostOf(gpu: Gpu, scale: ScaleId, mult = 1): number {
 /** стоимость GPU-часов за неделю: только пока идёт проект, в стабилизации — неполная */
 export function gpuWeeklyCost(state: GameState): number {
   const project = state.project;
-  if (!project) return 0;
+  if (!project || project.kind === 'framework') return 0;
   const phaseShare = project.phase >= DEV_PHASES ? BALANCE.project.stabilizationGpuShare : 1;
   return gpuWeeklyCostOf(gpuById(project.gpu), project.scale, phaseShare * getMods(state).gpuCost * state.gpuCostMult);
 }

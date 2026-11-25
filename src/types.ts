@@ -718,6 +718,7 @@ export type SimEvent =
   | { type: 'toast'; text: string; tone: Tone }
   | { type: 'news'; newsId: number }
   | { type: 'release'; modelId: number }
+  | { type: 'framework' }
   | { type: 'insolvency'; weeksLeft: number }
   | { type: 'achievement'; id: string }
   | { type: 'gameover' };
@@ -737,6 +738,8 @@ export type Modal =
   | { kind: 'model'; modelId: number }
   | { kind: 'courses'; staffId: string }
   | { kind: 'research'; nodeId: string }
+  | { kind: 'framework' }
+  | { kind: 'frameworkReport' }
   | { kind: 'save' }
   | { kind: 'confirm'; title: string; text: string; confirmLabel: string; danger?: boolean; onConfirm: () => void };
 

@@ -290,6 +290,35 @@ try {
   check(await page.getByRole('button', { name: /Свёрточные сети/ }).isVisible(), 'новая парадигма доступна в мастере');
   await dismissModals();
   await page.getByRole('button', { name: 'Закрыть' }).tap();
+
+  step('Лаборатория: функция фреймворка');
+  await navTab('Лаборатория').tap();
+  for (let i = 0; i < 90 && (await rpValue()) < 45; i++) {
+    await page.waitForTimeout(500);
+    await dismissModals();
+  }
+  check((await rpValue()) >= 45, `очков хватает на исследование функции (${await rpValue()})`);
+  await page.getByRole('button', { name: /Автоматическое дифференцирование/ }).tap();
+  await page.getByRole('button', { name: 'Начать исследование' }).tap();
+  await page.getByRole('button', { name: /Автоматическое дифференцирование[\s\S]*изучено/ }).waitFor({ timeout: 15000 });
+  check(true, '«Автоматическое дифференцирование» изучено');
+
+  step('Свой фреймворк: сборка версии');
+  await navTab('Проект').tap();
+  await page.getByRole('button', { name: 'Собрать' }).tap();
+  await page.getByRole('heading', { name: 'Свой фреймворк' }).waitFor();
+  await page.getByRole('button', { name: /Автодифф/ }).tap();
+  const buildButton = page.getByRole('button', { name: /^Собрать v1/ });
+  await buildButton.waitFor();
+  await page.waitForTimeout(300);
+  await shot('17-framework');
+  await buildButton.tap();
+  await page.getByText('Функции новой версии').waitFor();
+  check(true, 'проект фреймворка запущен');
+  await page.getByText(/Фреймворк v1 готов/).waitFor({ timeout: 15000 });
+  check(await page.getByText('Градиенты для любого графа вычислений.').isVisible(), 'в отчёте перечислены функции новой версии');
+  await dismissModals();
+  check(await page.getByText(/v1/).first().isVisible(), 'карточка фреймворка показывает версию 1');
 } catch (err) {
   failures.push(`сценарий прерван: ${String(err).split('\n')[0]}`);
   console.log(`  ✗ сценарий прерван: ${String(err).split('\n').slice(0, 6).join('\n')}`);

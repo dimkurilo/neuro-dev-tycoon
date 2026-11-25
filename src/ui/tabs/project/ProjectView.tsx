@@ -14,6 +14,7 @@ import { Icon } from '../../icons';
 import { Bar, Btn, Card, Chip, cn } from '../../primitives';
 import { ShareSlider, effectiveShare } from '../../widgets';
 import { fmtInt, fmtMoney } from '../../format';
+import { FrameworkView } from './FrameworkView';
 
 const PHASE_INDEX = [0, 1, 2, 3] as const;
 
@@ -27,6 +28,7 @@ export function ProjectView({ project }: { project: Project }) {
   const openModal = useGame((s) => s.openModal);
   const cancelProject = useGame((s) => s.cancelProject);
   if (!game) return null;
+  if (project.kind === 'framework') return <FrameworkView project={project} />;
 
   const domain = domainById(project.domain);
   const paradigm = paradigmById(project.paradigm);

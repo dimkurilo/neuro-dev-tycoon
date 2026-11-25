@@ -11,6 +11,7 @@ import { licenseGpu, licensePlatform, moveOffice, useGpu } from '../sim/market';
 import { activateBoost } from '../sim/boosts';
 import { fire, hire, postJobs, sendTraining, sendVacation, setFocus, toggleProject } from '../sim/staff';
 import { startResearch } from '../sim/research';
+import { startFramework } from '../sim/framework';
 import { exportSave, normalizeGame, parseSave, SAVE_KEY, SAVE_VERSION } from '../sim/save';
 
 // localStorage бывает недоступен (приватный режим, запрещённые куки) — тогда живём в памяти,
@@ -86,6 +87,7 @@ export interface GameStore {
   postJobs(): string | null;
   activateBoost(id: string): string | null;
   startResearch(nodeId: string): string | null;
+  startFramework(featureIds: readonly string[], name: string): string | null;
 }
 
 /** листы, при открытии которых мир продолжает идти; остальные останавливают время */
@@ -124,6 +126,9 @@ function applyEvents(ui: UiState, events: SimEvent[]): { ui: UiState; freshToast
         break;
       case 'release':
         queue.push({ kind: 'release', modelId: ev.modelId });
+        break;
+      case 'framework':
+        queue.push({ kind: 'frameworkReport' });
         break;
       case 'insolvency':
         queue.push({ kind: 'insolvency', weeksLeft: ev.weeksLeft });
@@ -259,6 +264,7 @@ export const useGame = create<GameStore>()(
         postJobs: () => act((draft, rng) => postJobs(draft, rng)),
         activateBoost: (id) => act((draft, rng) => activateBoost(draft, id, rng)),
         startResearch: (nodeId) => act((draft) => startResearch(draft, nodeId)),
+        startFramework: (ids, name) => act((draft) => startFramework(draft, ids, name)),
       };
     },
     {

@@ -3,6 +3,7 @@ import { BALANCE } from '../data/balance';
 import { Rng } from './rng';
 import { runProject } from './project';
 import { runResearch } from './research';
+import { runFramework } from './framework';
 import { runStaff } from './staff';
 import { runAudience, runSales } from './sales';
 import { runFinance } from './finance';
@@ -65,7 +66,8 @@ export function advanceWeek(game: GameState): SimResult {
 function runSteps(state: GameState, rng: Rng, events: SimEvent[]): void {
   runResearch(state, events);
   runStaff(state, rng, events);
-  runProject(state, rng, events);
+  if (state.project?.kind === 'framework') runFramework(state, events);
+  else runProject(state, rng, events);
   runAudience(state);
   const income = runSales(state);
   runFinance(state, events, income);

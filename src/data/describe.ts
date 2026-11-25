@@ -9,6 +9,8 @@ import { moduleById } from './modules';
 import { campaignById } from './marketing';
 import { boostById } from './boosts';
 import { scaleById } from './compat';
+import { platformById } from './platforms';
+import type { Feature } from '../types';
 
 const pct = (value: number) => `${Math.round(value * 100)}%`;
 
@@ -48,3 +50,32 @@ export function describeEffects(node: ResearchNode): string[] {
   if (e.revealFit) out.push('Матрица совместимости доменов и парадигм');
   return out;
 }
+
+export const EXPANSION_LABEL: Record<'v2' | 'xl' | 'mini' | 'finetune', string> = {
+  v2: 'Версия 2.0',
+  xl: 'XL-версия',
+  mini: 'Mini-версия',
+  finetune: 'Файнтюн',
+};
+
+const pctFeature = (value: number) => `${Math.round(value * 100)}%`;
+
+/** коротко: что даёт функция фреймворка */
+export function describeFeature(feature: Feature): string {
+  const out: string[] = [];
+  if (feature.speed) out.push(`скорость +${pctFeature(feature.speed)}`);
+  if (feature.quality) out.push(`качество +${pctFeature(feature.quality)}`);
+  if (feature.rp) out.push(`И-очки +${pctFeature(feature.rp)}`);
+  if (feature.bugReduce) out.push(`деградаций −${pctFeature(feature.bugReduce)}`);
+  if (feature.gpuCost) out.push(`GPU-часы −${pctFeature(feature.gpuCost)}`);
+  if (feature.bugTags) {
+    for (const [tag, value] of Object.entries(feature.bugTags)) {
+      if (value) out.push(`«${DEG_TAG_LABEL[tag as keyof typeof DEG_TAG_LABEL].toLowerCase()}» −${pctFeature(value)}`);
+    }
+  }
+  if (feature.platforms) out.push(`бонус на: ${feature.platforms.map((id) => platformById(id).name.toLowerCase()).join(', ')}`);
+  if (feature.affinity) out.push(`бонус для подходящих доменов и парадигм +${pctFeature(feature.affinity.bonus)}`);
+  if (feature.expansion) out.push(`открывает версии: ${EXPANSION_LABEL[feature.expansion].toLowerCase()}`);
+  return out.join(' · ');
+}
+
